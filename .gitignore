@@ -1,0 +1,24 @@
+node_modules/
+.history/
+coverage/
+.tmp/
+.temp/
+*.log
+*.bak
+*.tmp
+
+# local debug / scratch
+_debug_*.js
+_fix_debug.js
+_clean_*.html
+_server_output.html
+
+# packaged / exported artifacts
+*.tar.gz
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

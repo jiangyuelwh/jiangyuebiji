@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工作中心</title>
+<link rel="stylesheet" href="/static/workbench.css">
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+</head>
+<body>
+<div class="wb-shell">
+  <div class="quick-actions">
+    <button class="qa-btn qa-primary" id="btnNewNote">📝 新建笔记</button>
+    <button class="qa-btn" id="btnClipArticle">📚 文章收录</button>
+    <button class="qa-btn" id="btnTodayTasks">✅ 今日任务</button>
+    <button class="qa-btn" id="btnReminders">⏰ 提醒事项</button>
+  </div>
+
+  <div class="wb-grid">
+    <section class="wb-panel">
+      <div class="wb-panel-head">
+        <div class="wb-panel-title">📋 今日任务</div>
+        <span class="wb-badge" id="todayBadge">0</span>
+      </div>
+      <div class="tab-bar" id="todayTabs"><span class="tab active" data-filter="undone">未完成</span><span class="tab" data-filter="done">已完成</span></div>
+      <div id="todayList" class="wb-list">加载中...</div>
+    </section>
+
+    <section class="wb-panel">
+      <div class="wb-panel-head">
+        <div class="wb-panel-title">⚠️ 其他待办</div>
+        <span class="wb-badge wb-badge-warn" id="otherBadge">0</span>
+      </div>
+      <div class="tab-bar" id="otherTabs"><span class="tab active" data-filter="undone">未完成</span><span class="tab" data-filter="done">已完成</span></div>
+      <div id="otherList" class="wb-list">加载中...</div>
+    </section>
+
+    <section class="wb-panel">
+      <div class="wb-panel-head">
+        <div class="wb-panel-title">⏳ 提醒事项</div>
+        <span class="wb-badge wb-badge-rose" id="remBadge">0</span>
+      </div>
+      <div class="tab-bar" id="remTabs"><span class="tab active" data-filter="undone">未完成</span><span class="tab" data-filter="done">已完成</span></div>
+      <div id="remList" class="wb-list">加载中...</div>
+    </section>
+  </div>
+</div>
+
+<div class="wb-modal" id="newNoteModal" style="display:none">
+  <div class="wb-modal-box">
+    <div class="wb-modal-head">
+      <strong>选择新建目录</strong>
+      <button class="wb-close" id="newNoteModalClose">×</button>
+    </div>
+    <div class="wb-modal-body">
+      <div class="wb-dir-list" id="newNoteDirList"></div>
+    </div>
+    <div class="wb-modal-actions">
+      <button class="wb-btn" id="newNoteCancel">取消</button>
+      <button class="wb-btn wb-btn-primary" id="newNoteConfirm" disabled>在此新建</button>
+    </div>
+  </div>
+</div>
+
+<div class="wb-modal" id="clipArticleModal" style="display:none">
+  <div class="wb-modal-box wb-modal-box-wide">
+    <div class="wb-modal-head">
+      <strong>文章收录</strong>
+      <button class="wb-close" id="clipArticleClose">×</button>
+    </div>
+    <div class="wb-modal-body wb-modal-body-split">
+      <div class="wb-pane wb-pane-left">
+        <div class="wb-field">
+          <div class="wb-label">文章链接</div>
+          <input class="wb-input" id="clipUrlInput" type="text" placeholder="请输入文章 URL，例如 https://mp.weixin.qq.com/...">
+        </div>
+        <div class="wb-field wb-field-fill">
+          <div class="wb-label">收录目录</div>
+          <div class="wb-dir-list wb-dir-list-tall" id="clipDirList"></div>
+        </div>
+      </div>
+      <div class="wb-pane wb-pane-right">
+        <div class="wb-field wb-field-fill">
+          <div class="wb-label">提取预览</div>
+          <div class="wb-preview-box wb-preview-box-tall" id="clipPreviewBox">请输入链接并点击“预览内容”</div>
+        </div>
+      </div>
+    </div>
+    <div class="wb-modal-actions">
+      <button class="wb-btn" id="clipPreviewBtn">预览内容</button>
+      <button class="wb-btn" id="clipCancelBtn">取消</button>
+      <button class="wb-btn wb-btn-primary" id="clipSaveBtn" disabled>收录到此</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/workbench.js"></script>
+</body>
+</html>

@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10个Hermes Agent神操作，把我的聊天助手变成7x24小时永不停机系统</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<article class="markdown-body"><h1>10个Hermes Agent神操作，把我的聊天助手变成7x24小时永不停机系统</h1>
+<blockquote>
+<p>来源：微信公众号<br>原文链接：<a href="https://mp.weixin.qq.com/s/VP11YGrLwx6yWNbJD_UCYw">https://mp.weixin.qq.com/s/VP11YGrLwx6yWNbJD_UCYw</a><br>作者：<br>            尼克的AI笔记<br>收录时间：2026/6/15 18:05:34</p>
+</blockquote>
+<p>每天重复同样的工作：查资料、写文案、回复消息……你觉得自己像台机器。但有人用同一个AI助手，每周省下15小时，却几乎不用手动操作。差别在哪？不是工具不行，是你没用对。</p>
+<p><figure class="md-asset-image"><img src="/fujian/%E6%96%87%E7%AB%A0%E6%94%B6%E5%BD%95/10%E4%B8%AAHermes%20Agent%E7%A5%9E%E6%93%8D%E4%BD%9C%EF%BC%8C%E6%8A%8A%E6%88%91%E7%9A%84%E8%81%8A%E5%A4%A9%E5%8A%A9%E6%89%8B%E5%8F%98%E6%88%907x24%E5%B0%8F%E6%97%B6%E6%B0%B8%E4%B8%8D%E5%81%9C%E6%9C%BA%E7%B3%BB%E7%BB%9F/640_1781517932029.jpg" alt=""><figcaption>640_1781517932029.jpg</figcaption></figure></p>
+<p>这10个Hermes Agent技巧，每周能帮你省下15小时以上——而且任何你重复运行的流程都能用。不管是内容创作、软件开发、业务运营、客户管理、研究还是销售，只要做过一次的事，Hermes就能替你做。</p>
+<p>作者举的例子来自内容和社交媒体自动化，因为这是每天在跑的场景。但这些设置本身与领域无关。一个用来扫描X平台热帖的定时任务，和用来检查GitHub上未处理的PR、或者监控CRM里新线索的定时任务，用的是同一套机制。</p>
+<p>大多数人把Hermes Agent当聊天软件用。打开它，输入提示词，拿到回复，关掉。</p>
+<p>这意味着90%的功能都被浪费了。</p>
+<p>下面这10个设置，能把Hermes从一个聊天窗口，变成24小时工作的系统——你睡觉时它跑着，工作流变了它会自动反应，而且每次运行都变得更聪明。</p>
+<blockquote>
+<p>如果你没时间看全部10个，先看这3个：定时任务（第3个）、/goal结构化指令（第4个）、技能SOP（第8个）。光这3个设置，就能让你对Hermes的体验一夜之间天翻地覆。</p>
+</blockquote>
+<h2>目录</h2>
+<ol>
+<li><p>任务控制中心 —— 设置时间：30分钟，每周省时：2小时</p>
+</li>
+<li><p>事件触发器 —— 设置时间：20分钟，每周省时：3小时</p>
+</li>
+<li><p>定时任务 —— 设置时间：10分钟，每周省时：5小时 ⭐</p>
+</li>
+<li><p>/goal结构化指令 —— 设置时间：5分钟，每周省时：4小时 ⭐</p>
+</li>
+<li><p>子智能体 —— 设置时间：5分钟，每周省时：3小时</p>
+</li>
+<li><p>Telegram话题分区 —— 设置时间：10分钟，每周省时：1小时</p>
+</li>
+<li><p>看板任务管理 —— 设置时间：5分钟，每周省时：2小时</p>
+</li>
+<li><p>技能SOP —— 设置时间：15分钟/每个技能，每周省时：5小时 ⭐</p>
+</li>
+<li><p>Webhook事件回调 —— 设置时间：30分钟，每周省时：3小时</p>
+</li>
+<li><p>独立智能体分角色 —— 设置时间：20分钟/每个角色，每周省时：4小时</p>
+</li>
+</ol>
+<h2>1. 任务控制中心</h2>
+<p>第一个设置，也是最大的一个：建一个面板，让所有东西都一目了然。</p>
+<p>当Hermes真正干活的时候，你不想这些工作淹没在聊天记录里。你想看到什么在跑、什么在等你处理、什么卡住了、什么需要审批、以及从昨天到现在发生了什么变化。</p>
+<p>让Hermes帮你建：</p>
+<pre><code>帮我建一个任务控制面板。要求：- 一个看板，显示所有活跃的智能体任务- 一个内容流水线，我能往里加想法并跟踪进度- 一个记忆百科，记录我们做过的所有事情- 一个绩效板块，显示我的X平台和内容数据
+</code></pre>
+<p>Hermes自带一个开箱即用的面板：</p>
+<pre><code>hermes dashboard
+</code></pre>
+<p>打开后访问 localhost:9119。技能、模型、定时任务、角色、看板都在这里。先从这个用起，需要更多功能时再自定义。</p>
+<p>Hermes最近还推出了原生的桌面应用，支持macOS、Windows和Linux。有并排预览、文件浏览器、集成语音。数据目录和CLI、Telegram版本一致。在电脑上用桌面版，出门切到Telegram。一个智能体，所有界面。</p>
+<p>下载地址： hermes-agent.nousresearch.com/desktop</p>
+<p>在任何界面上快速启动一个可用的智能体：</p>
+<pre><code>hermes setup --portal
+</code></pre>
+<p>一次OAuth认证，覆盖模型、网页搜索、图片生成、语音合成和云端浏览器。不需要单独配API密钥。</p>
+<p>一旦你在面板里加上看板，Hermes就不再是你发消息的对象，而成为你操作系统的一部分。所有任务、状态、阻塞项都在一个地方显示，用不着翻聊天记录。</p>
+<p>任务控制中心让你看到整个系统的运作。下一个设置，则让Hermes开始在没有你提示的情况下主动行动。</p>
+<h2>2. 事件触发器</h2>
+<p>想想你在哪些地方工作：Notion、Linear、Google Sheets、Slack。你移动一个任务、更新一个状态、加一个想法。但做完这些之后，什么都不会发生。你得记住之后去告诉Hermes。</p>
+<p>解决方法：让Hermes监视这些变化，并自动做出反应。</p>
+<p>举个例子：当你在Notion里把一个视频创意拖到&quot;待拍摄&quot;列表时，Hermes检测到这个变化，几分钟内就在Telegram上发给你一份拍摄方案。</p>
+<p>这份方案包括：</p>
+<ul>
+<li><p>这个内容现在该拍、以后拍，还是直接毙掉？</p>
+</li>
+<li><p>最强的标题角度</p>
+</li>
+<li><p>30秒的开场钩子</p>
+</li>
+<li><p>需要准备的展示素材</p>
+</li>
+<li><p>拍摄前的检查清单</p>
+</li>
+</ul>
+<p>你没有给Hermes发任何提示。你只是移动了一张卡片。Hermes看到了状态变化，然后完成了工作。</p>
+<p>如何设置：</p>
+<h2>方案 A — Hermes定时任务轮询检测（最简单）：</h2>
+<pre><code>设置一个每10分钟运行的定时任务：检查我的Notion看板 [看板链接]。如果过去10分钟内有任何卡片被移到&quot;待拍摄&quot;，就研究这个主题，写一份拍摄方案，然后发送到Telegram。
+</code></pre>
+<p><strong>方案 B — Webhook触发（实时）：</strong> 使用Notion自动化、Make或Zapier，当卡片移动时向Hermes发送一个webhook。这样响应是即时的，而不是每10分钟轮询一次。</p>
+<p>核心原则：当你的工作流状态发生变化时，Hermes应该知道接下来该做什么。</p>
+<h2>3. 定时任务</h2>
+<p>事件触发器对变化做出反应。定时任务对时间做出反应。</p>
+<p>每天早晨，作者没开口问，就能收到一条有用的信息。这一转变，让Hermes感觉像是一个在你醒来之前就开始工作的员工。</p>
+<p>作者在系统里跑的定时任务：</p>
+<pre><code>每天早上8点：给我发送一条值得在X上回应的AI新闻。每3小时：扫描X平台，找出我的领域里值得转推的新帖子。每天晚上9点：检查竞争对手今天有没有发超常发挥的内容。每周一早上9点：审计我的内容看板。标记那些卡了超过7天的想法。每周五下午6点：总结本周发布的内容，哪些表现好、哪些不好、原因是什么。
+</code></pre>
+<p>在Hermes里设置这些，直接用大白话就行。不需要crontab语法。直接告诉智能体你想要什么、什么时候要。</p>
+<p>区别在于：你不需要记得去问Hermes，而是在你想之前，有用的信息就已经送到了。这才叫一个24小时待命的助手。</p>
+<p>定时工作只是系统的一半。另一半是给Hermes提供比普通提示词更好的目标指令。</p>
+<h2>4. /goal 结构化指令</h2>
+<p>普通的提示词，只让Hermes给一次回复。/goal 则给Hermes一个目标，它可以跨多轮对话去完成，直到做完为止。</p>
+<p>大多数人在用/goal的时候，跟用普通提示词没什么区别。输入一句模糊的话，得到模糊的结果。一个有用/goal和一个能真正交付工作的/goal，区别就在于结构。</p>
+<p>这个模板百试不爽：</p>
+<pre><code>/goal [我要达成的结果]使用 [信息来源]约束条件: [限制条件]交付成果: [最终交付物]
+</code></pre>
+<h2>举个例子：</h2>
+<pre><code>/goal 找今天最强的3个内容角度使用 X平台热门话题和我过去14天的帖子数据约束条件: 不重复我之前写过的话题交付成果: 3个角度，每个搭配一条30字内的标题建议
+</code></pre>
+<p>每个部分各有用处：</p>
+<ul>
+<li><p>结果：告诉Hermes什么时候算完成</p>
+</li>
+<li><p>来源：告诉它去哪里查</p>
+</li>
+<li><p>约束：告诉它要避开什么</p>
+</li>
+<li><p>交付：告诉它&quot;做完&quot;长什么样</p>
+</li>
+</ul>
+<p>模糊的提示词，产出也模糊。有结构的目标，才能产出有用的结果。</p>
+<h2>采访小技巧：</h2>
+<p>如果你不知道怎么给你的目标加结构，让Hermes帮你：</p>
+<pre><code>我想用/goal，但不想目标太模糊。请你只问我需要的问题。然后把我的回答转成最强力的/goal命令。要包含：确切的结果、上下文、信息来源、约束条件、交付成果，以及什么时候该停止。
+</code></pre>
+<p>Hermes会问你5到8个问题，然后用你的回答自己写出/goal命令。最终生成的目标，比你从头写要精准得多。</p>
+<h2>5. 子智能体：组建你的研究团队</h2>
+<p>一个智能体给你一个答案。子智能体给你一个团队。</p>
+<p>对于任何值得做的研究任务，作者会把它拆分成多个子智能体同时并行。每个子智能体有不同的信息源。最终的结果汇总成一份建议。</p>
+<h2>举个例子：</h2>
+<pre><code>/goal 研究本周最好的内容角度。生成3个子智能体：1. 扫描X平台AI智能体领域的热帖，   抓取互动数据和哪些钩子有效2. 分析我最近30天的帖子，   找出表现好与不好的规律3. 检查竞争对手的账号，   标记过去7天里的异常内容把三个结果整合成一份推荐，包括最强角度、标题草案和需要准备的素材。
+</code></pre>
+<p>每个子智能体都有自己的上下文窗口。只有最终的总结会返回主会话。你的主上下文一直保持轻量。</p>
+<p>这就是问一个人去研究所有东西（又慢又浅），和让三个专家各自深耕自己的部分（又快又深）之间的区别。</p>
+<p>子智能体最适合的场景：</p>
+<ul>
+<li><p>跨多个信息源的研究</p>
+</li>
+<li><p>竞争分析（每个竞争对手配一个子智能体）</p>
+</li>
+<li><p>内容创作（一个做研究、一个写草稿、一个负责编辑）</p>
+</li>
+<li><p>代码审查（一个检查逻辑、一个检查安全、一个检查性能）</p>
+</li>
+</ul>
+<h2>6. Telegram话题分区：打造专属工作空间</h2>
+<p>Telegram的话题功能，能把一个对话拆成多个独立工作区。每个话题拥有不同的上下文和不同任务。</p>
+<p>作者的分区设置：</p>
+<ul>
+<li><p>YouTube话题 —— 内容策划、脚本、拍摄方案</p>
+</li>
+<li><p>回复话题 —— X平台上值得回应的热门帖子</p>
+</li>
+<li><p>编码话题 —— 技术工作、调试、PR</p>
+</li>
+<li><p>研究话题 —— 深度调研、竞争分析</p>
+</li>
+<li><p>通用话题 —— 小任务、零散问题</p>
+</li>
+</ul>
+<p>不同的工作需要在不同的房间进行。如果所有东西都挤在一个对话里，上下文就会混淆。一个编码问题可能会和内容方案混在一起，一个研究任务可能会打断草稿的审核。</p>
+<p>话题可以解决这个问题。每个工作区保持自己的对话线程。Hermes根据你在哪个话题来理解你在说什么。</p>
+<p>在任何Telegram群里设置话题的方法：</p>
+<ol>
+<li><p>创建一个包含Hermes机器人的群组</p>
+</li>
+<li><p>在群组设置中启用话题</p>
+</li>
+<li><p>每个工作区创建一个话题</p>
+</li>
+<li><p>在每个话题里分别给Hermes发消息</p>
+</li>
+</ol>
+<h2>每个话题对应不同的定时任务：</h2>
+<pre><code>YouTube话题定时任务，每天早上8点：研究X和YouTube上AI内容的热门趋势。给我3个内容想法，附上互动数据。结果仅发到本话题。回复话题定时任务，每3小时：扫描X平台AI智能体领域，过去3小时内获赞超过500的帖子。如果有值得回应的，起草一条转推，发送到这里等审批。研究话题定时任务，每周一早上9点：运行一次竞争对手审计。检查 @对手1 @对手2 @对手3 上周发了什么。标记异常内容。报告发到这里。
+</code></pre>
+<p>每个话题有自己独立的定时任务。研究内容留在研究话题，内容创作留在内容话题。互不干扰。</p>
+<h2>7. 看板：任务管理不再迷失</h2>
+<p>一旦Hermes同时处理多件事情，你就需要一个看板。否则任务会消失在聊天记录里，你甚至忘了自己要求过什么。</p>
+<p>Hermes自带内置看板。数据存于SQLite，持久可靠，所有角色共享。</p>
+<pre><code>hermes kanban list
+</code></pre>
+<p>显示你的看板。把任务丢进待分类区。调度器每60秒自动分配给工作节点。</p>
+<p>状态流转：待分类 → 待办 → 就绪 → 运行中 → 阻塞 → 完成</p>
+<p>这改变了什么：</p>
+<ul>
+<li><p>你能看到什么就绪、什么在跑、什么完成</p>
+</li>
+<li><p>你能看到每个任务属于哪个智能体</p>
+</li>
+<li><p>你能看到什么卡住了以及原因</p>
+</li>
+<li><p>崩溃的任务会被自动回收（僵尸检测）</p>
+</li>
+<li><p>心跳包跟踪工作节点健康</p>
+</li>
+</ul>
+<p>你发起的每一个/goal也会自动生成一个看板卡片。多个角色下的多个目标，全都显示在一个看板上。</p>
+<pre><code>/goal 研究竞争对手 → 生成看板卡片/goal 起草周报 → 生成看板卡片/goal 处理收件箱 → 生成看板卡片
+</code></pre>
+<p>这三个任务并行运行，全在一个地方跟踪。</p>
+<p>有了看板，智能体的工作不会消失在聊天记录里。</p>
+<h2>早上的看板流程：</h2>
+<pre><code>/goal 研究竞争对手 → 生成看板卡片/goal 起草周报 → 生成看板卡片/goal 处理收件箱 → 生成看板卡片
+</code></pre>
+<p>早餐时丢进5个任务。到午饭时一半已经完成。你完全不需要亲自去管。</p>
+<h2>8. 技能SOP：把流程存成标准作业</h2>
+<p>技能就是给Hermes用的标准作业流程。你把一个过程编码一次，智能体就能永远用下去。</p>
+<p>Hermes其实在每次完成一项任务后，自动创建技能。它会复盘哪些步骤有效，把工作流保存为markdown文件放在 <code>~/.hermes/skills/</code> 目录下，下一次直接复用。</p>
+<p>但如果你为关键工作流主动编写技能，杠杆效应会成倍放大。</p>
+<h2>举个例子 —— 一个内容创作技能：</h2>
+<pre><code>把这个保存为技能，名叫 &quot;content-post&quot;：# 内容发布工作流1. 通过X搜索检查AI智能体领域的热门话题2. 与我过去14天的帖子交叉对比（避免重复）3. 基于互动规律选择最强角度4. 用我的风格写草稿：   - 全大写钩子，主题用 HERMES AGENT   - 箭头 → 列出功能   - 不用破折号，不用副词，不要铺垫   - 结尾写 &quot;完整设置指南见文章 👇&quot;5. 给草稿打分：   - 钩子：能不能让人停下来？（1-10分）   - 收藏价值：会不会有人收藏？（1-10分）   - 证据：每个判断都有数字支撑吗？（1-10分）6. 如果任何一项低于7分，重写那部分7. 把最终稿发到Telegram等审批
+</code></pre>
+<p>以后只要你说&quot;用 content-post 技能写今天的草稿&quot;，Hermes就会自动执行整套SOP，你不用再重复解释流程。</p>
+<p>任何你解释了两次以上的工作流，都应该变成技能。久而久之，你的智能体会积累几十个技能，每个都编码了一个曾经需要你手动指令的流程。</p>
+<p>技能是透明的。它们以markdown文件存在。你可以随时查看、编辑、删除。没有黑箱。</p>
+<p>查看所有技能：</p>
+<pre><code>hermes skills
+</code></pre>
+<p>或者打开面板 → 技能标签：</p>
+<pre><code>hermes dashboard
+</code></pre>
+<p>Hermes内置了60多个工具，覆盖终端、网页、浏览器、视觉、图片生成、语音合成、代码执行等。技能层叠在这些工具之上，创建完整的工作流。</p>
+<h2>9. Webhook事件回调：世界变了，智能体就动</h2>
+<p>定时任务因为时间变了而触发。Webhook因为世界变了而触发。</p>
+<p>几个事件驱动的例子：</p>
+<ul>
+<li><p>一个新线索进来 → Hermes立即研究该公司</p>
+</li>
+<li><p>GitHub上有人开了个PR → Hermes总结变更并标记风险</p>
+</li>
+<li><p>竞争对手发了新内容 → Hermes判断是否值得回应</p>
+</li>
+<li><p>会议转录文本生成 → Hermes提取行动项并加到你的看板</p>
+</li>
+<li><p>某个关键词开始走热 → Hermes起草一个内容角度</p>
+</li>
+</ul>
+<p>关键在于消除那些&quot;重要事情发生了但没人处理&quot;的空白时段。</p>
+<p>Hermes通过它的网关接收webhook。在你的自动化工具（Make、Zapier、n8n）里配置webhook URL，指向你的Hermes网关端点。</p>
+<h2>例子：通过 n8n + Hermes 做竞争对手监控：</h2>
+<pre><code>n8n 工作流：1. RSS触发器监控竞争对手博客（每30分钟）2. 如果检测到新文章 → 向Hermes发送webhookHermes 收到webhook后执行 /goal：/goal 竞争对手刚发布了：[标题] [链接]。通过网页搜索阅读全文。用3行总结要点。评估：我是否该在X上回应？如果是，用我的风格起草一条回复。把一切发到Telegram等审批。
+</code></pre>
+<h2>例子：新线索通知：</h2>
+<pre><code>Zapier触发器：网站有新表单提交→ 向Hermes发送webhookHermes 收到webhook后执行 /goal：/goal 新线索：[姓名]，[公司]，[邮箱]。通过网络搜索研究该公司。找到其LinkedIn和近期动态。起草一封个性化的跟进邮件。把草稿发到Telegram等审批。
+</code></pre>
+<p>核心原则：定时任务处理时间。Webhook处理事件。两者配合，覆盖了所有&quot;不需要你动手、Hermes就该醒着&quot;的场景。</p>
+<h2>10. 独立智能体分角色</h2>
+<p>你不会让会计去做牙医的活。你也不会让一个智能体用同一个模型、同一套工具、同一套记忆、同一套权限去干所有工作。</p>
+<p>Hermes的角色功能，让你可以为不同角色创建独立的智能体。每个角色拥有自己的：</p>
+<ul>
+<li><p>soul.md（个性和规则）</p>
+</li>
+<li><p>记忆（它知道什么）</p>
+</li>
+<li><p>技能（它能做什么）</p>
+</li>
+<li><p>模型（需要多聪明）</p>
+</li>
+<li><p>MCP连接（它能用什么工具）</p>
+</li>
+<li><p>权限（允许做什么）</p>
+</li>
+</ul>
+<h2>示例角色设置：</h2>
+<pre><code>hermes profile create content-lead→ soul.md: 你负责内容创作。模仿我的语气。   使用最新趋势。避免重复的角度。→ model: claude-sonnet-4（需要强写作能力）→ tools: X搜索、网页搜索、数据分析hermes profile create researcher→ soul.md: 你负责找信息。只做深度研究。   没有观点。只有事实和数字。→ model: gpt-5.5（便宜，量大）→ tools: 网页搜索、firecrawl、浏览器hermes profile create ops→ soul.md: 你处理行政事务。日历、邮件分类、   提醒。发送任何东西之前先请示。→ model: gpt-5.5（日常任务，成本低）→ tools: 邮件、日历、Notionhermes profile create code-reviewer→ soul.md: 你审核PR。标记安全问题、   逻辑错误、性能问题。→ model: claude-opus-4-8（需要深度推理）→ tools: GitHub、终端
+</code></pre>
+<p>有些智能体需要用你能买到的最聪明的模型。有些只需要每小时检查一次页面。有些需要写权限。有些永远不应该有写权限。</p>
+<h2>每个角色的第一个 /goal：</h2>
+<pre><code>content-lead:/goal 研究AI智能体领域的热门话题。与过去14天的帖子交叉对比。按我的风格起草2条帖子。每条按钩子强度（1-10分）和收藏价值（1-10分）打分。把草稿发到Telegram等审批。researcher:/goal 对[主题]进行深度研究。使用网页搜索和firecrawl从至少5个来源拉取数据。把发现汇总成结构化的markdown报告，包含数字、来源和关键结论。保存到文件。ops:/goal 检查我的收件箱。总结哪些需要回复。拉出今天的日历事件。标记任何紧急事项。早上9点前把简报发到Telegram。code-reviewer:/goal 审核[仓库]的最新PR。检查安全问题、逻辑错误和性能问题。写出带具体行号的审核总结。发到Telegram。
+</code></pre>
+<p>每个角色执行它的第一个/goal，从结果中学习，然后把工作流保存为技能。第二次跑更快。第五次基本自动。</p>
+<h2>一键分享任意角色：</h2>
+<blockquote>
+<p>建了一个好用的研究智能体？通过git分享：</p>
+</blockquote>
+<pre><code>cd ~/.hermes/profiles/researchergit init &amp;&amp; git add . &amp;&amp; git commit -m &quot;初始化&quot;git push origin main
+</code></pre>
+<p>任何人都可以安装你的智能体：</p>
+<pre><code>hermes profile install github.com/你/你的research角色
+</code></pre>
+<p>他们填入自己的API密钥，然后智能体就能用你的技能、你的soul.md、你的工作流开始运行。他们的记忆和会话保持独立。</p>
+<p>关键在于形成一支由小型智能体组成的团队，每个都有自己的大脑、工具、记忆和权限，专门干自己的那摊活。</p>
+<p>让它们同时运行。每个都专精一路。在自己的赛道上独立进化。</p>
+<h2>它们如何串联在一起</h2>
+<p>这10个设置叠加起来，效果指数级放大。以下是作者系统里正在跑的一个链条：</p>
+<pre><code>早上8:00 — 定时任务（第3个）触发。content-lead角色（第10个）被唤醒，开始执行一个结构化的 /goal（第4个）：&quot;利用X平台热门数据和过去14天的帖子，找出今天最强的3个内容角度。&quot;它生成了3个子智能体（第5个）：→ 子智能体1 扫描X热门帖→ 子智能体2 拉取近期帖子表现→ 子智能体3 检查竞争对手账号这三个都变成了看板卡片（第7个）。调度器并行跟踪它们。子智能体完成后，content-lead角色运行 content-post 技能（第8个）起草2条帖子。草稿落入Telegram的&quot;内容&quot;话题（第6个）等审批。作者认可一条，拒绝另一条。通过的帖子通过xurl发布。10分钟后，一个竞争对手发布了针对同一话题的回应。一个webhook（第9个）触发。Hermes起草了跟进角度，发到&quot;回复&quot;话题（第6个）等审批。作者在任务控制中心（第1个）看到所有东西：什么跑了、什么发布了、什么在等着。
+</code></pre>
+<p>一个早晨。七个技巧同时触发。两条帖子准备好了。零手动研究。</p>
+<p>这就是系统。</p>
+<h2>真正的洞察</h2>
+<p>如果你觉得Hermes还是个聊天软件，那是你忽略了它周围的系统。</p>
+<p>给它一个任务控制中心，让你看到一切。设置事件触发器，让工作流一变它就自动反应。设置定时任务，让有用信息在你提问之前就送到。使用结构化的/goal而不是模糊的提示词。把研究拆成多个子智能体。用Telegram话题分隔工作空间。用看板跟踪任务。把重复流程存成技能。用webhook连接外部事件。别再让一个智能体干所有事。</p>
+<p>十个设置。每个每周省下几个小时。十个叠加在一起，Hermes替你运营你的工作流，而你专注于真正能推动进展的事情。</p>
+<p>智能体已经就绪。系统已经就绪。把线接好，让它跑起来。</p>
+<h2>资源</h2>
+<p>官方：</p>
+<ul>
+<li><p>Hermes Agent 文档 —— 安装、配置、完整CLI参考</p>
+</li>
+<li><p>技能集散中心 —— 社区技能，浏览和安装</p>
+</li>
+<li><p>GitHub —— 源码、issue、PR</p>
+</li>
+</ul>
+<blockquote>
+<p>想了解另外7个技巧？包含会话回放、Token优化、语音模式、浏览器自动化、隔夜/goal运行、记忆插件和工具搜索的完整版本，可以在子栈上阅读完整17个技巧指南。</p>
+<p><figure class="md-asset-image"><img src="/fujian/%E6%96%87%E7%AB%A0%E6%94%B6%E5%BD%95/10%E4%B8%AAHermes%20Agent%E7%A5%9E%E6%93%8D%E4%BD%9C%EF%BC%8C%E6%8A%8A%E6%88%91%E7%9A%84%E8%81%8A%E5%A4%A9%E5%8A%A9%E6%89%8B%E5%8F%98%E6%88%907x24%E5%B0%8F%E6%97%B6%E6%B0%B8%E4%B8%8D%E5%81%9C%E6%9C%BA%E7%B3%BB%E7%BB%9F/640_1781517934315.jpg" alt=""><figcaption>640_1781517934315.jpg</figcaption></figure></p>
+</blockquote>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<button onclick="copyLink(this)" style="position:fixed;top:12px;right:12px;z-index:999;border:1px solid rgba(208,215,222,.9);background:rgba(255,255,255,0.72);border-radius:10px;padding:10px 14px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.08);line-height:1.2;backdrop-filter:blur(6px);opacity:.86" title="复制文章链接">
+  🔗
+</button>
+<script>function copyLink(b){var text=window.location.href||"";function done(ok){b.innerHTML=ok?"\u2713 \u5df2\u590d\u5236":"\u2717 \u590d\u5236\u5931\u8d25";setTimeout(function(){b.innerHTML="\ud83d\udd17"},2000)}function showManual(){try{window.prompt("\u8bf7\u590d\u5236\u8fd9\u4e2a\u94fe\u63a5",text)}catch(e){alert(text)}done(false)}if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){done(true)}).catch(function(){fallback()});return}fallback();function fallback(){var ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","readonly");ta.style.position="fixed";ta.style.top="0";ta.style.left="-9999px";ta.style.opacity="0";document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);var ok=false;try{ok=document.execCommand("copy")}catch(e){ok=false}document.body.removeChild(ta);if(ok){done(true)}else{showManual()}}}function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+# 10个Hermes Agent神操作，把我的聊天助手变成7x24小时永不停机系统
+
+> 来源：微信公众号
+> 原文链接：https://mp.weixin.qq.com/s/VP11YGrLwx6yWNbJD_UCYw
+> 作者：
+                尼克的AI笔记              
+> 收录时间：2026/6/15 18:05:34
+
+每天重复同样的工作：查资料、写文案、回复消息……你觉得自己像台机器。但有人用同一个AI助手，每周省下15小时，却几乎不用手动操作。差别在哪？不是工具不行，是你没用对。
+
+![](/fujian/%E6%96%87%E7%AB%A0%E6%94%B6%E5%BD%95/10%E4%B8%AAHermes%20Agent%E7%A5%9E%E6%93%8D%E4%BD%9C%EF%BC%8C%E6%8A%8A%E6%88%91%E7%9A%84%E8%81%8A%E5%A4%A9%E5%8A%A9%E6%89%8B%E5%8F%98%E6%88%907x24%E5%B0%8F%E6%97%B6%E6%B0%B8%E4%B8%8D%E5%81%9C%E6%9C%BA%E7%B3%BB%E7%BB%9F/640_1781517932029.jpg)
+
+这10个Hermes Agent技巧，每周能帮你省下15小时以上——而且任何你重复运行的流程都能用。不管是内容创作、软件开发、业务运营、客户管理、研究还是销售，只要做过一次的事，Hermes就能替你做。
+
+作者举的例子来自内容和社交媒体自动化，因为这是每天在跑的场景。但这些设置本身与领域无关。一个用来扫描X平台热帖的定时任务，和用来检查GitHub上未处理的PR、或者监控CRM里新线索的定时任务，用的是同一套机制。
+
+大多数人把Hermes Agent当聊天软件用。打开它，输入提示词，拿到回复，关掉。
+
+这意味着90%的功能都被浪费了。
+
+下面这10个设置，能把Hermes从一个聊天窗口，变成24小时工作的系统——你睡觉时它跑着，工作流变了它会自动反应，而且每次运行都变得更聪明。
+
+> 如果你没时间看全部10个，先看这3个：定时任务（第3个）、/goal结构化指令（第4个）、技能SOP（第8个）。光这3个设置，就能让你对Hermes的体验一夜之间天翻地覆。
+
+## 目录
+
+1.  任务控制中心 —— 设置时间：30分钟，每周省时：2小时
+    
+2.  事件触发器 —— 设置时间：20分钟，每周省时：3小时
+    
+3.  定时任务 —— 设置时间：10分钟，每周省时：5小时 ⭐
+    
+4.  /goal结构化指令 —— 设置时间：5分钟，每周省时：4小时 ⭐
+    
+5.  子智能体 —— 设置时间：5分钟，每周省时：3小时
+    
+6.  Telegram话题分区 —— 设置时间：10分钟，每周省时：1小时
+    
+7.  看板任务管理 —— 设置时间：5分钟，每周省时：2小时
+    
+8.  技能SOP —— 设置时间：15分钟/每个技能，每周省时：5小时 ⭐
+    
+9.  Webhook事件回调 —— 设置时间：30分钟，每周省时：3小时
+    
+10.  独立智能体分角色 —— 设置时间：20分钟/每个角色，每周省时：4小时
+     
+
+## 1\. 任务控制中心
+
+第一个设置，也是最大的一个：建一个面板，让所有东西都一目了然。
+
+当Hermes真正干活的时候，你不想这些工作淹没在聊天记录里。你想看到什么在跑、什么在等你处理、什么卡住了、什么需要审批、以及从昨天到现在发生了什么变化。
+
+让Hermes帮你建：
+
+```
+帮我建一个任务控制面板。要求：- 一个看板，显示所有活跃的智能体任务- 一个内容流水线，我能往里加想法并跟踪进度- 一个记忆百科，记录我们做过的所有事情- 一个绩效板块，显示我的X平台和内容数据
+```
+
+Hermes自带一个开箱即用的面板：
+
+```
+hermes dashboard
+```
+
+打开后访问 localhost:9119。技能、模型、定时任务、角色、看板都在这里。先从这个用起，需要更多功能时再自定义。
+
+Hermes最近还推出了原生的桌面应用，支持macOS、Windows和Linux。有并排预览、文件浏览器、集成语音。数据目录和CLI、Telegram版本一致。在电脑上用桌面版，出门切到Telegram。一个智能体，所有界面。
+
+下载地址： hermes-agent.nousresearch.com/desktop
+
+在任何界面上快速启动一个可用的智能体：
+
+```
+hermes setup --portal
+```
+
+一次OAuth认证，覆盖模型、网页搜索、图片生成、语音合成和云端浏览器。不需要单独配API密钥。
+
+一旦你在面板里加上看板，Hermes就不再是你发消息的对象，而成为你操作系统的一部分。所有任务、状态、阻塞项都在一个地方显示，用不着翻聊天记录。
+
+任务控制中心让你看到整个系统的运作。下一个设置，则让Hermes开始在没有你提示的情况下主动行动。
+
+## 2\. 事件触发器
+
+想想你在哪些地方工作：Notion、Linear、Google Sheets、Slack。你移动一个任务、更新一个状态、加一个想法。但做完这些之后，什么都不会发生。你得记住之后去告诉Hermes。
+
+解决方法：让Hermes监视这些变化，并自动做出反应。
+
+举个例子：当你在Notion里把一个视频创意拖到"待拍摄"列表时，Hermes检测到这个变化，几分钟内就在Telegram上发给你一份拍摄方案。
+
+这份方案包括：
+
+-   这个内容现在该拍、以后拍，还是直接毙掉？
+    
+-   最强的标题角度
+    
+-   30秒的开场钩子
+    
+-   需要准备的展示素材
+    
+-   拍摄前的检查清单
+    
+
+你没有给Hermes发任何提示。你只是移动了一张卡片。Hermes看到了状态变化，然后完成了工作。
+
+如何设置：
+
+## 方案 A — Hermes定时任务轮询检测（最简单）：
+
+```
+设置一个每10分钟运行的定时任务：检查我的Notion看板 [看板链接]。如果过去10分钟内有任何卡片被移到"待拍摄"，就研究这个主题，写一份拍摄方案，然后发送到Telegram。
+```
+
+**方案 B — Webhook触发（实时）：** 使用Notion自动化、Make或Zapier，当卡片移动时向Hermes发送一个webhook。这样响应是即时的，而不是每10分钟轮询一次。
+
+核心原则：当你的工作流状态发生变化时，Hermes应该知道接下来该做什么。
+
+## 3\. 定时任务
+
+事件触发器对变化做出反应。定时任务对时间做出反应。
+
+每天早晨，作者没开口问，就能收到一条有用的信息。这一转变，让Hermes感觉像是一个在你醒来之前就开始工作的员工。
+
+作者在系统里跑的定时任务：
+
+```
+每天早上8点：给我发送一条值得在X上回应的AI新闻。每3小时：扫描X平台，找出我的领域里值得转推的新帖子。每天晚上9点：检查竞争对手今天有没有发超常发挥的内容。每周一早上9点：审计我的内容看板。标记那些卡了超过7天的想法。每周五下午6点：总结本周发布的内容，哪些表现好、哪些不好、原因是什么。
+```
+
+在Hermes里设置这些，直接用大白话就行。不需要crontab语法。直接告诉智能体你想要什么、什么时候要。
+
+区别在于：你不需要记得去问Hermes，而是在你想之前，有用的信息就已经送到了。这才叫一个24小时待命的助手。
+
+定时工作只是系统的一半。另一半是给Hermes提供比普通提示词更好的目标指令。
+
+## 4\. /goal 结构化指令
+
+普通的提示词，只让Hermes给一次回复。/goal 则给Hermes一个目标，它可以跨多轮对话去完成，直到做完为止。
+
+大多数人在用/goal的时候，跟用普通提示词没什么区别。输入一句模糊的话，得到模糊的结果。一个有用/goal和一个能真正交付工作的/goal，区别就在于结构。
+
+这个模板百试不爽：
+
+```
+/goal [我要达成的结果]使用 [信息来源]约束条件: [限制条件]交付成果: [最终交付物]
+```
+
+## 举个例子：
+
+```
+/goal 找今天最强的3个内容角度使用 X平台热门话题和我过去14天的帖子数据约束条件: 不重复我之前写过的话题交付成果: 3个角度，每个搭配一条30字内的标题建议
+```
+
+每个部分各有用处：
+
+-   结果：告诉Hermes什么时候算完成
+    
+-   来源：告诉它去哪里查
+    
+-   约束：告诉它要避开什么
+    
+-   交付：告诉它"做完"长什么样
+    
+
+模糊的提示词，产出也模糊。有结构的目标，才能产出有用的结果。
+
+## 采访小技巧：
+
+如果你不知道怎么给你的目标加结构，让Hermes帮你：
+
+```
+我想用/goal，但不想目标太模糊。请你只问我需要的问题。然后把我的回答转成最强力的/goal命令。要包含：确切的结果、上下文、信息来源、约束条件、交付成果，以及什么时候该停止。
+```
+
+Hermes会问你5到8个问题，然后用你的回答自己写出/goal命令。最终生成的目标，比你从头写要精准得多。
+
+## 5\. 子智能体：组建你的研究团队
+
+一个智能体给你一个答案。子智能体给你一个团队。
+
+对于任何值得做的研究任务，作者会把它拆分成多个子智能体同时并行。每个子智能体有不同的信息源。最终的结果汇总成一份建议。
+
+## 举个例子：
+
+```
+/goal 研究本周最好的内容角度。生成3个子智能体：1. 扫描X平台AI智能体领域的热帖，   抓取互动数据和哪些钩子有效2. 分析我最近30天的帖子，   找出表现好与不好的规律3. 检查竞争对手的账号，   标记过去7天里的异常内容把三个结果整合成一份推荐，包括最强角度、标题草案和需要准备的素材。
+```
+
+每个子智能体都有自己的上下文窗口。只有最终的总结会返回主会话。你的主上下文一直保持轻量。
+
+这就是问一个人去研究所有东西（又慢又浅），和让三个专家各自深耕自己的部分（又快又深）之间的区别。
+
+子智能体最适合的场景：
+
+-   跨多个信息源的研究
+    
+-   竞争分析（每个竞争对手配一个子智能体）
+    
+-   内容创作（一个做研究、一个写草稿、一个负责编辑）
+    
+-   代码审查（一个检查逻辑、一个检查安全、一个检查性能）
+    
+
+## 6\. Telegram话题分区：打造专属工作空间
+
+Telegram的话题功能，能把一个对话拆成多个独立工作区。每个话题拥有不同的上下文和不同任务。
+
+作者的分区设置：
+
+-   YouTube话题 —— 内容策划、脚本、拍摄方案
+    
+-   回复话题 —— X平台上值得回应的热门帖子
+    
+-   编码话题 —— 技术工作、调试、PR
+    
+-   研究话题 —— 深度调研、竞争分析
+    
+-   通用话题 —— 小任务、零散问题
+    
+
+不同的工作需要在不同的房间进行。如果所有东西都挤在一个对话里，上下文就会混淆。一个编码问题可能会和内容方案混在一起，一个研究任务可能会打断草稿的审核。
+
+话题可以解决这个问题。每个工作区保持自己的对话线程。Hermes根据你在哪个话题来理解你在说什么。
+
+在任何Telegram群里设置话题的方法：
+
+1.  创建一个包含Hermes机器人的群组
+    
+2.  在群组设置中启用话题
+    
+3.  每个工作区创建一个话题
+    
+4.  在每个话题里分别给Hermes发消息
+    
+
+## 每个话题对应不同的定时任务：
+
+```
+YouTube话题定时任务，每天早上8点：研究X和YouTube上AI内容的热门趋势。给我3个内容想法，附上互动数据。结果仅发到本话题。回复话题定时任务，每3小时：扫描X平台AI智能体领域，过去3小时内获赞超过500的帖子。如果有值得回应的，起草一条转推，发送到这里等审批。研究话题定时任务，每周一早上9点：运行一次竞争对手审计。检查 @对手1 @对手2 @对手3 上周发了什么。标记异常内容。报告发到这里。
+```
+
+每个话题有自己独立的定时任务。研究内容留在研究话题，内容创作留在内容话题。互不干扰。
+
+## 7\. 看板：任务管理不再迷失
+
+一旦Hermes同时处理多件事情，你就需要一个看板。否则任务会消失在聊天记录里，你甚至忘了自己要求过什么。
+
+Hermes自带内置看板。数据存于SQLite，持久可靠，所有角色共享。
+
+```
+hermes kanban list
+```
+
+显示你的看板。把任务丢进待分类区。调度器每60秒自动分配给工作节点。
+
+状态流转：待分类 → 待办 → 就绪 → 运行中 → 阻塞 → 完成
+
+这改变了什么：
+
+-   你能看到什么就绪、什么在跑、什么完成
+    
+-   你能看到每个任务属于哪个智能体
+    
+-   你能看到什么卡住了以及原因
+    
+-   崩溃的任务会被自动回收（僵尸检测）
+    
+-   心跳包跟踪工作节点健康
+    
+
+你发起的每一个/goal也会自动生成一个看板卡片。多个角色下的多个目标，全都显示在一个看板上。
+
+```
+/goal 研究竞争对手 → 生成看板卡片/goal 起草周报 → 生成看板卡片/goal 处理收件箱 → 生成看板卡片
+```
+
+这三个任务并行运行，全在一个地方跟踪。
+
+有了看板，智能体的工作不会消失在聊天记录里。
+
+## 早上的看板流程：
+
+```
+/goal 研究竞争对手 → 生成看板卡片/goal 起草周报 → 生成看板卡片/goal 处理收件箱 → 生成看板卡片
+```
+
+早餐时丢进5个任务。到午饭时一半已经完成。你完全不需要亲自去管。
+
+## 8\. 技能SOP：把流程存成标准作业
+
+技能就是给Hermes用的标准作业流程。你把一个过程编码一次，智能体就能永远用下去。
+
+Hermes其实在每次完成一项任务后，自动创建技能。它会复盘哪些步骤有效，把工作流保存为markdown文件放在 `~/.hermes/skills/` 目录下，下一次直接复用。
+
+但如果你为关键工作流主动编写技能，杠杆效应会成倍放大。
+
+## 举个例子 —— 一个内容创作技能：
+
+```
+把这个保存为技能，名叫 "content-post"：# 内容发布工作流1. 通过X搜索检查AI智能体领域的热门话题2. 与我过去14天的帖子交叉对比（避免重复）3. 基于互动规律选择最强角度4. 用我的风格写草稿：   - 全大写钩子，主题用 HERMES AGENT   - 箭头 → 列出功能   - 不用破折号，不用副词，不要铺垫   - 结尾写 "完整设置指南见文章 👇"5. 给草稿打分：   - 钩子：能不能让人停下来？（1-10分）   - 收藏价值：会不会有人收藏？（1-10分）   - 证据：每个判断都有数字支撑吗？（1-10分）6. 如果任何一项低于7分，重写那部分7. 把最终稿发到Telegram等审批
+```
+
+以后只要你说"用 content-post 技能写今天的草稿"，Hermes就会自动执行整套SOP，你不用再重复解释流程。
+
+任何你解释了两次以上的工作流，都应该变成技能。久而久之，你的智能体会积累几十个技能，每个都编码了一个曾经需要你手动指令的流程。
+
+技能是透明的。它们以markdown文件存在。你可以随时查看、编辑、删除。没有黑箱。
+
+查看所有技能：
+
+```
+hermes skills
+```
+
+或者打开面板 → 技能标签：
+
+```
+hermes dashboard
+```
+
+Hermes内置了60多个工具，覆盖终端、网页、浏览器、视觉、图片生成、语音合成、代码执行等。技能层叠在这些工具之上，创建完整的工作流。
+
+## 9\. Webhook事件回调：世界变了，智能体就动
+
+定时任务因为时间变了而触发。Webhook因为世界变了而触发。
+
+几个事件驱动的例子：
+
+-   一个新线索进来 → Hermes立即研究该公司
+    
+-   GitHub上有人开了个PR → Hermes总结变更并标记风险
+    
+-   竞争对手发了新内容 → Hermes判断是否值得回应
+    
+-   会议转录文本生成 → Hermes提取行动项并加到你的看板
+    
+-   某个关键词开始走热 → Hermes起草一个内容角度
+    
+
+关键在于消除那些"重要事情发生了但没人处理"的空白时段。
+
+Hermes通过它的网关接收webhook。在你的自动化工具（Make、Zapier、n8n）里配置webhook URL，指向你的Hermes网关端点。
+
+## 例子：通过 n8n + Hermes 做竞争对手监控：
+
+```
+n8n 工作流：1. RSS触发器监控竞争对手博客（每30分钟）2. 如果检测到新文章 → 向Hermes发送webhookHermes 收到webhook后执行 /goal：/goal 竞争对手刚发布了：[标题] [链接]。通过网页搜索阅读全文。用3行总结要点。评估：我是否该在X上回应？如果是，用我的风格起草一条回复。把一切发到Telegram等审批。
+```
+
+## 例子：新线索通知：
+
+```
+Zapier触发器：网站有新表单提交→ 向Hermes发送webhookHermes 收到webhook后执行 /goal：/goal 新线索：[姓名]，[公司]，[邮箱]。通过网络搜索研究该公司。找到其LinkedIn和近期动态。起草一封个性化的跟进邮件。把草稿发到Telegram等审批。
+```
+
+核心原则：定时任务处理时间。Webhook处理事件。两者配合，覆盖了所有"不需要你动手、Hermes就该醒着"的场景。
+
+## 10\. 独立智能体分角色
+
+你不会让会计去做牙医的活。你也不会让一个智能体用同一个模型、同一套工具、同一套记忆、同一套权限去干所有工作。
+
+Hermes的角色功能，让你可以为不同角色创建独立的智能体。每个角色拥有自己的：
+
+-   soul.md（个性和规则）
+    
+-   记忆（它知道什么）
+    
+-   技能（它能做什么）
+    
+-   模型（需要多聪明）
+    
+-   MCP连接（它能用什么工具）
+    
+-   权限（允许做什么）
+    
+
+## 示例角色设置：
+
+```
+hermes profile create content-lead→ soul.md: 你负责内容创作。模仿我的语气。   使用最新趋势。避免重复的角度。→ model: claude-sonnet-4（需要强写作能力）→ tools: X搜索、网页搜索、数据分析hermes profile create researcher→ soul.md: 你负责找信息。只做深度研究。   没有观点。只有事实和数字。→ model: gpt-5.5（便宜，量大）→ tools: 网页搜索、firecrawl、浏览器hermes profile create ops→ soul.md: 你处理行政事务。日历、邮件分类、   提醒。发送任何东西之前先请示。→ model: gpt-5.5（日常任务，成本低）→ tools: 邮件、日历、Notionhermes profile create code-reviewer→ soul.md: 你审核PR。标记安全问题、   逻辑错误、性能问题。→ model: claude-opus-4-8（需要深度推理）→ tools: GitHub、终端
+```
+
+有些智能体需要用你能买到的最聪明的模型。有些只需要每小时检查一次页面。有些需要写权限。有些永远不应该有写权限。
+
+## 每个角色的第一个 /goal：
+
+```
+content-lead:/goal 研究AI智能体领域的热门话题。与过去14天的帖子交叉对比。按我的风格起草2条帖子。每条按钩子强度（1-10分）和收藏价值（1-10分）打分。把草稿发到Telegram等审批。researcher:/goal 对[主题]进行深度研究。使用网页搜索和firecrawl从至少5个来源拉取数据。把发现汇总成结构化的markdown报告，包含数字、来源和关键结论。保存到文件。ops:/goal 检查我的收件箱。总结哪些需要回复。拉出今天的日历事件。标记任何紧急事项。早上9点前把简报发到Telegram。code-reviewer:/goal 审核[仓库]的最新PR。检查安全问题、逻辑错误和性能问题。写出带具体行号的审核总结。发到Telegram。
+```
+
+每个角色执行它的第一个/goal，从结果中学习，然后把工作流保存为技能。第二次跑更快。第五次基本自动。
+
+## 一键分享任意角色：
+
+> 建了一个好用的研究智能体？通过git分享：
+
+```
+cd ~/.hermes/profiles/researchergit init && git add . && git commit -m "初始化"git push origin main
+```
+
+任何人都可以安装你的智能体：
+
+```
+hermes profile install github.com/你/你的research角色
+```
+
+他们填入自己的API密钥，然后智能体就能用你的技能、你的soul.md、你的工作流开始运行。他们的记忆和会话保持独立。
+
+关键在于形成一支由小型智能体组成的团队，每个都有自己的大脑、工具、记忆和权限，专门干自己的那摊活。
+
+让它们同时运行。每个都专精一路。在自己的赛道上独立进化。
+
+## 它们如何串联在一起
+
+这10个设置叠加起来，效果指数级放大。以下是作者系统里正在跑的一个链条：
+
+```
+早上8:00 — 定时任务（第3个）触发。content-lead角色（第10个）被唤醒，开始执行一个结构化的 /goal（第4个）："利用X平台热门数据和过去14天的帖子，找出今天最强的3个内容角度。"它生成了3个子智能体（第5个）：→ 子智能体1 扫描X热门帖→ 子智能体2 拉取近期帖子表现→ 子智能体3 检查竞争对手账号这三个都变成了看板卡片（第7个）。调度器并行跟踪它们。子智能体完成后，content-lead角色运行 content-post 技能（第8个）起草2条帖子。草稿落入Telegram的"内容"话题（第6个）等审批。作者认可一条，拒绝另一条。通过的帖子通过xurl发布。10分钟后，一个竞争对手发布了针对同一话题的回应。一个webhook（第9个）触发。Hermes起草了跟进角度，发到"回复"话题（第6个）等审批。作者在任务控制中心（第1个）看到所有东西：什么跑了、什么发布了、什么在等着。
+```
+
+一个早晨。七个技巧同时触发。两条帖子准备好了。零手动研究。
+
+这就是系统。
+
+## 真正的洞察
+
+如果你觉得Hermes还是个聊天软件，那是你忽略了它周围的系统。
+
+给它一个任务控制中心，让你看到一切。设置事件触发器，让工作流一变它就自动反应。设置定时任务，让有用信息在你提问之前就送到。使用结构化的/goal而不是模糊的提示词。把研究拆成多个子智能体。用Telegram话题分隔工作空间。用看板跟踪任务。把重复流程存成技能。用webhook连接外部事件。别再让一个智能体干所有事。
+
+十个设置。每个每周省下几个小时。十个叠加在一起，Hermes替你运营你的工作流，而你专注于真正能推动进展的事情。
+
+智能体已经就绪。系统已经就绪。把线接好，让它跑起来。
+
+## 资源
+
+官方：
+
+-   Hermes Agent 文档 —— 安装、配置、完整CLI参考
+    
+-   技能集散中心 —— 社区技能，浏览和安装
+    
+-   GitHub —— 源码、issue、PR
+    
+
+> 想了解另外7个技巧？包含会话回放、Token优化、语音模式、浏览器自动化、隔夜/goal运行、记忆插件和工具搜索的完整版本，可以在子栈上阅读完整17个技巧指南。
+> 
+> ![](/fujian/%E6%96%87%E7%AB%A0%E6%94%B6%E5%BD%95/10%E4%B8%AAHermes%20Agent%E7%A5%9E%E6%93%8D%E4%BD%9C%EF%BC%8C%E6%8A%8A%E6%88%91%E7%9A%84%E8%81%8A%E5%A4%A9%E5%8A%A9%E6%89%8B%E5%8F%98%E6%88%907x24%E5%B0%8F%E6%97%B6%E6%B0%B8%E4%B8%8D%E5%81%9C%E6%9C%BA%E7%B3%BB%E7%BB%9F/640_1781517934315.jpg)
+/source-md-->

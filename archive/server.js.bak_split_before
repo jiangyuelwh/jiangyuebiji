@@ -1,0 +1,1114 @@
+#!/usr/bin/env node
+/**
+ * liruibiji - 文件管理器 (Node.js 版)
+ * 唯一文件 = .html，markdown 源嵌入 HTML 注释中
+ * 编辑时从注释提取 markdown，保存时重新渲染写入
+ */
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { marked } = require('marked');
+const TurndownService = require('turndown');
+const turndown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', emDelimiter: '*' });
+
+// marked.js 对中文环境的行内格式存在多个兼容性 bug：
+
+// ── LRU 缓存 ──
+class LRUCache {
+  constructor(maxSize = 200, ttl = 30000) {
+    this.maxSize = maxSize; this.ttl = ttl;
+    this.cache = new Map();
+  }
+  get(key) {
+    if (!this.cache.has(key)) return null;
+    const entry = this.cache.get(key);
+    if (Date.now() - entry.time > this.ttl) { this.cache.delete(key); return null; }
+    this.cache.delete(key); this.cache.set(key, entry);
+    return entry.value;
+  }
+  set(key, value) {
+    if (this.cache.has(key)) this.cache.delete(key);
+    if (this.cache.size >= this.maxSize) { this.cache.delete(this.cache.keys().next().value); }
+    this.cache.set(key, { value, time: Date.now() });
+  }
+  del(key) { this.cache.delete(key); }
+  clear() { this.cache.clear(); }
+  delPrefix(prefix) { for (const k of this.cache.keys()) if (k.startsWith(prefix)) this.cache.delete(k); }
+}
+const fileCache = new LRUCache(200, 30000);
+const dirCache = new LRUCache(50, 10000);
+
+//   - **粗体** 关闭**前是中文标点时失败（如 **粗体。**文本 ❌）
+//   - __粗体__ 和 _斜体_ 在中文环境完全不工作
+// 预处理修复所有这些边缘情况，不影响原生英文格式。
+function preprocessMd(md) {
+  // 1. **bold** 粗体：修复关闭**前是中文全角标点（\uff00-\uffef）的情况
+  md = md.replace(/\*\*(\S[^*]*?[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef])\*\*/g, '<strong>$1</strong>');
+  // 2. __bold__ 粗体（中文环境marked完全不识别）
+  md = md.replace(/__(.+?)__/g, (m, inner) => {
+    if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(inner)) return '<strong>' + inner + '</strong>';
+    return m;
+  });
+  // 3. _italic_ 斜体（中文环境marked不识别）
+  md = md.replace(/_([^_]+?)_/g, (m, inner) => {
+    if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(inner)) return '<em>' + inner + '</em>';
+    return m;
+  });
+  return md;
+}
+
+const mdParse = (text, opts) => marked.parse(preprocessMd(text || ''), opts);
+
+const app = express();
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use('/static', express.static(path.join(__dirname, 'static')));
+
+const BASE_DIR = __dirname;
+const ARTICLES_DIR = path.join(BASE_DIR, 'articles');
+fs.mkdirSync(ARTICLES_DIR, { recursive: true });
+
+// ── HTML 标记 ──
+// 注意：必须是一个连续的注释块，中间内容才不会出现在DOM中
+const MD_START = '<!--source-md';
+const MD_END = '/source-md-->';
+
+// 检查一行是否包含指定标签（兼容旧格式 <!-- 标签 --> 和新格式 %%标签%%）
+function hasTag(line, tag) {
+  return line.includes('<!-- ' + tag + ' -->') || line.includes('%%' + tag + '%%');
+}
+
+// 在 source-md 行中忽略 HTML 注释标签进行匹配（兼容页面JS不发送标签的场景）
+// 找到匹配行后，如果 raw 不带标签但源行有，自动保留原标签
+function replaceMdLineTagAware(mdText, raw) {
+  const oldRaw = /\[x\]/i.test(raw) ? raw.replace(/\[x\]/i, '[ ]') : raw.replace('[ ]', '[x]');
+  const lines = mdText.split('\n');
+  const strippedOld = oldRaw.replace(/<!--[\s\S]*?-->/g, '').trim();
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].replace(/<!--[\s\S]*?-->/g, '').trim() === strippedOld) {
+      // 保留源行的标签（如果 raw 没有标签而源行有）
+      const tagMatch = lines[i].match(/<!--[\s\S]*?-->/);
+      let newLine = raw;
+      if (tagMatch && !raw.includes('<!--')) {
+        newLine = raw.trim() + ' ' + tagMatch[0];
+      }
+      lines[i] = newLine;
+      return lines.join('\n');
+    }
+  }
+  return null;
+}
+
+// ── 版本历史 ──
+const HISTORY_DIR = path.join(BASE_DIR, '.history');
+function saveSnapshot(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return;
+    const relPath = path.relative(ARTICLES_DIR, filePath);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const histPath = path.join(HISTORY_DIR, relPath + '.' + timestamp);
+    fs.mkdirSync(path.dirname(histPath), { recursive: true });
+    fs.copyFileSync(filePath, histPath);
+    const baseDir = path.dirname(histPath);
+    const snapshots = fs.readdirSync(baseDir).filter(f => f.startsWith(path.basename(relPath))).sort();
+    while (snapshots.length > 50) { try { fs.unlinkSync(path.join(baseDir, snapshots.shift())); } catch {} }
+  } catch (e) { console.error('快照保存失败:', e.message); }
+}
+
+// ── Hook 系统 ──
+const EventEmitter = require('events');
+class HookSystem extends EventEmitter {
+  register(name, fn) { this.on(name, fn); }
+  async trigger(name, ...args) {
+    for (const fn of this.listeners(name)) { try { await fn(...args); } catch (e) { console.error('Hook '+name+':', e.message); } }
+  }
+}
+const hooks = new HookSystem();
+
+// ── 标签系统 ──
+function extractTags(mdText) {
+  const tags = [];
+  const m = mdText.match(/<!--\s*tags?\s*:\s*(.+?)\s*-->/i);
+  if (m) tags.push(...m[1].split(/[,，、\s]+/).filter(Boolean));
+  return [...new Set(tags)];
+}
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+// 纯文件（.md）的精确行匹配，忽略标签
+function findLineIdx(lines, target) {
+  const stripped = target.replace(/<!--[\s\S]*?-->/g, '').trim();
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].replace(/<!--[\s\S]*?-->/g, '').trim() === stripped) return i;
+  }
+  return -1;
+}
+
+function buildHtml(title, bodyHtml, sourceMd) {
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // 提取 sourceMd 中的 <script> 标签，放到 </article> 之后（避免 turndown 转换时过滤）
+  const scriptBlocks = [];
+  sourceMd.replace(/<script[\s\S]*?<\/script>/gi, (m) => { scriptBlocks.push(m); return ''; });
+  const scriptHtml = scriptBlocks.join('\n');
+  // 去掉 bodyHtml 中已有的 <script>（来自 mdParse 保留的内联 HTML），避免重复
+  const cleanBody = bodyHtml.replace(/<script[\s\S]*?<\/script>/gi, '');
+  // 将 %%标签%% 转为 HTML 注释（使标签在渲染页面中不可见）
+  const visibleBody = cleanBody
+    .replace(/%%提醒事项%%/g, '<!-- 提醒事项 -->')
+    .replace(/%%每日任务%%/g, '<!-- 每日任务 -->')
+    .replace(/%%每日任务模板%%/g, '<!-- 每日任务模板 -->');
+  return '<!DOCTYPE html>\n'
+    + '<html lang="zh-CN">\n<head>\n'
+    + '<meta charset="utf-8">\n'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+    + '<title>' + esc(title) + '</title>\n'
+    + '<link rel="stylesheet" href="/static/github-markdown.min.css">\n'
+    + '<style>\n  body { margin:0; background:#fff; }\n'
+    + '  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px; }\n'
+    + '  @media (max-width:767px) { .markdown-body { padding: 15px; } }\n'
+    + '</style>\n</head>\n<body>\n'
+    + '<article class="markdown-body">' + visibleBody + '</article>\n'
++ '<button onclick="copyLink(this)" style="position:fixed;top:8px;right:8px;z-index:999;border:1px solid #e0e0e0;background:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,0.08);line-height:1" title="复制文章链接">\n'
++ '  🔗\n'
++ '</button>\n'
++ '<script>function copyLink(b){navigator.clipboard.writeText(window.location.href).then(function(){b.innerHTML="\\u2713 \\u5df2\\u590d\\u5236";setTimeout(function(){b.innerHTML="\\ud83d\\udd17"},2000)}).catch(function(){b.innerHTML="\\u2717 \\u590d\\u5236\\u5931\\u8d25"})}</script>\n'
++ (scriptHtml ? scriptHtml + '\n' : '')
+    + '</body>\n</html>\n'
+    + MD_START + '\n' + sourceMd + '\n' + MD_END;
+}
+
+function extractSourceMd(html) {
+  // 新格式：<!--source-md\n content\n /source-md--> 单个连续注释
+  const newMatch = html.match(/<!--source-md\s*([\s\S]*?)\s*\/source-md-->/);
+  if (newMatch) return newMatch[1].trim();
+  // 旧格式（兼容）: <!--source-md-->\n content\n <!--/source-md-->
+  const oldMatch = html.match(/<!--source-md-->([\s\S]*?)<!--\/source-md-->/);
+  if (oldMatch) return oldMatch[1].trim();
+  // Fallback: from title
+  const tm = html.match(/<title>(.+?)<\/title>/);
+  const title = tm ? tm[1] : '无标题';
+  return '# ' + title + '\n\n<!-- markdown源丢失 -->\n';
+}
+
+// 确保 HTML 有 Markdown 源，没有则用 turndown 转换并嵌入
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function ensureSourceMd(html) {
+  // 检查是否有 source-md（新旧格式都支持）
+  if (/<!--source-md[\s\S]*?\/source-md-->/.test(html)) return html;
+  if (/<!--source-md-->[\s\S]*?<!--\/source-md-->/.test(html)) return html;
+
+  // 提取 <body> 中的 <script> 标签，避免 turndown 过滤掉
+  const scriptBlocks = [];
+  const bodyMatchAll = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  if (bodyMatchAll) {
+    bodyMatchAll[1].replace(/<script[\s\S]*?<\/script>/gi, (m) => { scriptBlocks.push(m); });
+  }
+
+  // 用 turndown 将 HTML body 转为 Markdown
+  let mdText = '';
+  try {
+    // 提取 <body> 或 <article> 或完整内容
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*)<\/article>/i);
+    const bodyContent = articleMatch ? articleMatch[1] : (bodyMatch ? bodyMatch[1] : html);
+    mdText = turndown.turndown(bodyContent).trim();
+  } catch {
+    const tm = html.match(/<title>(.+?)<\/title>/);
+    const title = tm ? tm[1] : '无标题';
+    mdText = '# ' + title + '\n\n> 自动从 HTML 转换\n';
+  }
+
+  // 如果提取到了 script，附加到 markdown 末尾
+  if (scriptBlocks.length > 0) {
+    mdText += '\n\n' + scriptBlocks.join('\n');
+  }
+
+  // 取出 title
+  const tm = html.match(/<title>(.+?)<\/title>/);
+  const title = tm ? tm[1] : '无标题';
+
+  // 确保 markdown 有标题行（# 标题），否则从 HTML <title> 补上
+  if (!/^#\s/m.test(mdText)) {
+    mdText = '# ' + title + '\n\n' + mdText;
+  }
+
+  // 重新构建：保留原始 <style> 等头部信息，body 内渲染 md
+  const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
+
+  // 保留原有 <head> 内容，替换 body
+  const headContent = html.match(/<head[^>]*>([\s\S]*)<\/head>/i);
+  const headHtml = headContent ? headContent[1] : '';
+
+  return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n'
+    + '<meta charset="utf-8">\n'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+    + '<title>' + escHtml(title) + '</title>\n'
+    + '<link rel="stylesheet" href="/static/github-markdown.min.css">\n'
+    + '<style>\n  body { margin:0; background:#fff; }\n'
+    + '  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px; }\n'
+    + '  @media (max-width:767px) { .markdown-body { padding: 15px; } }\n'
+    + '</style>\n</head>\n<body>\n'
+    + '<article class="markdown-body">' + bodyHtml + '</article>\n'
+    + '</body>\n</html>\n'
+    + MD_START + '\n' + mdText + '\n' + MD_END;
+}
+
+function extractTitle(md) {
+  const m = md.match(/^#\s+(.+)$/m);
+  return m ? m[1].trim() : '无标题';
+}
+
+function slugify(text) {
+  return String(text).replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').slice(0, 60) || 'untitled';
+}
+
+function safePath(target, base) {
+  return path.resolve(base, target).startsWith(path.resolve(base));
+}
+
+// ── 扫描目录树 ──
+function scanTree(dirPath) {
+  const tree = [];
+  let entries;
+  try { entries = fs.readdirSync(dirPath).sort(); } catch { return tree; }
+  for (const entry of entries) {
+    if (entry.startsWith('.')) continue;
+    const fullPath = path.join(dirPath, entry);
+    const stat = fs.statSync(fullPath);
+    if (!stat.isDirectory()) continue;
+    tree.push({
+      type: 'dir', name: entry,
+      path: path.relative(ARTICLES_DIR, fullPath).replace(/\\/g, '/'),
+      children: scanTree(fullPath),
+    });
+  }
+  return tree;
+}
+
+// ── 列出文件 ──
+function listDir(dirPath) {
+  const files = [];
+  let entries;
+  try { entries = fs.readdirSync(dirPath).sort(); } catch { return files; }
+  for (const entry of entries) {
+    if (entry.startsWith('.')) continue;
+    const fullPath = path.join(dirPath, entry);
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) continue;
+    if (!entry.endsWith('.html') && !entry.endsWith('.md')) continue;
+
+    let title = entry.replace(/\.html$/, '').replace(/\.md$/, '');
+    let isMd = entry.endsWith('.md');
+    try {
+      const content = fs.readFileSync(fullPath, 'utf-8').slice(0, 2000);
+      const tm = content.match(/<title>(.+?)<\/title>/);
+      if (tm && tm[1] && tm[1] !== '无标题') title = tm[1];
+    } catch {}
+
+    files.push({
+      name: entry,
+      path: path.relative(ARTICLES_DIR, fullPath).replace(/\\/g, '/'),
+      title,
+      size: stat.size,
+      mtime: stat.mtime.toISOString().replace('T', ' ').slice(0, 19),
+      isMd: !!isMd,
+    });
+  }
+  return files;
+}
+
+// ── API ──
+
+  var cachedTree = dirCache.get('tree');
+  if (cachedTree) return res.json(cachedTree);
+app.get('/api/dirs', (req, res) => { var tree = scanTree(ARTICLES_DIR); dirCache.set('tree', tree); res.json(tree); });
+
+app.get('/api/list', (req, res) => {
+  const dirPath = req.query.dir || '';
+  const target = dirPath ? path.join(ARTICLES_DIR, dirPath) : ARTICLES_DIR;
+  if (!fs.existsSync(target)) return res.status(404).json({ error: '目录不存在' });
+  res.json({ files: listDir(target), path: dirPath || '/' });
+});
+
+app.get('/api/read', (req, res) => {
+  const p = req.query.path;
+  if (!p) return res.status(400).json({ error: '缺少 path' });
+  const filePath = path.resolve(ARTICLES_DIR, p);
+  if (!safePath(filePath, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  var cached = fileCache.get(filePath);
+  if (cached) return res.json(cached);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '文件不存在' });
+  let html = fs.readFileSync(filePath, 'utf-8');
+  // 没有 source-md 则自动转换并保存回文件
+  if (html.indexOf(MD_START) < 0) {
+    html = ensureSourceMd(html);
+    try { fs.writeFileSync(filePath, html, 'utf-8'); } catch (e) { /* 只读文件，不保存 */ }
+  }
+  const mdText = extractSourceMd(html);
+  res.json({ path: p, title: extractTitle(mdText), markdown: mdText });
+});
+
+app.post('/api/save', (req, res) => {
+  const { markdown: mdText, path: filePath } = req.body;
+  let htmlPath;
+  if (filePath) {
+    htmlPath = path.resolve(ARTICLES_DIR, filePath);
+    if (!safePath(htmlPath, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  } else {
+    const title = extractTitle(mdText || '');
+    const slug = slugify(title);
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const targetDir = path.join(ARTICLES_DIR, dateStr);
+    fs.mkdirSync(targetDir, { recursive: true });
+    let baseName = slug + '.html';
+    htmlPath = path.join(targetDir, baseName);
+    let c = 1;
+    while (fs.existsSync(htmlPath)) { baseName = slug + '_' + c + '.html'; htmlPath = path.join(targetDir, baseName); c++; }
+  }
+  const title = extractTitle(mdText || '');
+  const bodyHtml = mdParse(mdText || '', { breaks: true, gfm: true });
+  try {
+    fs.writeFileSync(htmlPath, buildHtml(title, bodyHtml, mdText || ''), 'utf-8');
+  } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+  const relPath = path.relative(ARTICLES_DIR, htmlPath).replace(/\\\\/g, '/');
+  res.json({ success: true, path: relPath, title });
+    hooks.trigger('afterSave', { filePath: filePath });
+});
+
+app.post('/api/create-file', (req, res) => {
+  let { name, dir, content: initialContent } = req.body;
+  if (!name) return res.status(400).json({ error: '缺少文件名' });
+  if (!name.endsWith('.html')) name += '.html';
+  const targetDir = dir ? path.join(ARTICLES_DIR, dir) : ARTICLES_DIR;
+  if (!safePath(targetDir, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  fs.mkdirSync(targetDir, { recursive: true });
+  let filePath = path.join(targetDir, name);
+  if (fs.existsSync(filePath)) {
+    const base = name.replace(/\.html$/, '');
+    let c = 1;
+    while (fs.existsSync(path.join(targetDir, base + '_' + c + '.html'))) c++;
+    filePath = path.join(targetDir, base + '_' + c + '.html');
+    name = base + '_' + c + '.html';
+  }
+  const mdText = initialContent || '# ' + name.replace(/\.html$/, '') + '\n\n';
+  const title = extractTitle(mdText);
+  const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
+    dirCache.del('tree');
+  try { fs.writeFileSync(filePath, buildHtml(title, bodyHtml, mdText), 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+  const relPath = path.relative(ARTICLES_DIR, filePath).replace(/\\\\/g, '/');
+  res.json({ success: true, path: relPath, name });
+});
+
+app.post('/api/create-dir', (req, res) => {
+  const { name, dir } = req.body;
+  if (!name) return res.status(400).json({ error: '缺少目录名' });
+  const targetDir = dir ? path.join(ARTICLES_DIR, dir, name) : path.join(ARTICLES_DIR, name);
+  if (!safePath(targetDir, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  fs.mkdirSync(targetDir, { recursive: true });
+  res.json({ success: true, path: path.relative(ARTICLES_DIR, targetDir).replace(/\\/g, '/') });
+});
+
+app.post('/api/upload', (req, res) => {
+  const { files: uploadedFiles, dir } = req.body;
+  if (!uploadedFiles || !Array.isArray(uploadedFiles)) return res.status(400).json({ error: '缺少 files 数组' });
+  const targetDir = dir ? path.join(ARTICLES_DIR, dir) : ARTICLES_DIR;
+  if (!safePath(targetDir, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  fs.mkdirSync(targetDir, { recursive: true });
+  const results = [];
+  for (const file of uploadedFiles) {
+    let { name: fileName, content: fileContent } = file;
+    if (!fileName) continue;
+    if (fileName.endsWith('.md')) {
+      const title = extractTitle(fileContent);
+      const bodyHtml = mdParse(fileContent, { breaks: true, gfm: true });
+      fileName = fileName.replace(/\.md$/, '.html');
+      fileContent = buildHtml(title, bodyHtml, fileContent);
+    } else if (!fileName.endsWith('.html')) continue;
+    let filePath = path.join(targetDir, fileName);
+    let finalName = fileName;
+    if (fs.existsSync(filePath)) {
+      const base = fileName.replace(/\.html$/, '');
+      let c = 1;
+      while (fs.existsSync(path.join(targetDir, base + '_' + c + '.html'))) c++;
+      filePath = path.join(targetDir, base + '_' + c + '.html');
+      finalName = base + '_' + c + '.html';
+    }
+    try {
+      fs.writeFileSync(filePath, fileContent, 'utf-8');
+      results.push({ name: finalName, path: path.relative(ARTICLES_DIR, filePath).replace(/\\/g, '/') });
+    } catch (err) {
+      results.push({ name: finalName, path: null, error: err.code });
+    }
+  }
+    dirCache.del('tree');
+    fileCache.del(filePath);
+    dirCache.del('tree');
+    fileCache.del(filePath);
+  res.json({ success: true, files: results });
+});
+
+app.post('/api/delete', (req, res) => {
+  const { path: p, isDir } = req.body;
+  if (!p) return res.status(400).json({ error: '缺少 path' });
+  const target = path.resolve(ARTICLES_DIR, p);
+  if (!safePath(target, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  if (isDir) { try { fs.rmSync(target, { recursive: true, force: true }); } catch {} }
+  else { try { if (fs.existsSync(target)) fs.unlinkSync(target); } catch {} }
+  res.json({ success: true });
+});
+
+app.post('/api/rename', (req, res) => {
+  const { path: oldPath, name: newName } = req.body;
+  if (!oldPath || !newName) return res.status(400).json({ error: '缺少参数' });
+  const oldFull = path.resolve(ARTICLES_DIR, oldPath);
+  if (!safePath(oldFull, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  const dirName = path.dirname(oldFull);
+  const newFull = path.join(dirName, newName);
+  if (fs.existsSync(newFull)) return res.status(409).json({ error: '目标已存在' });
+  fs.renameSync(oldFull, newFull);
+  dirCache.del('tree'); fileCache.del(oldFull);
+  res.json({ success: true, path: path.relative(ARTICLES_DIR, newFull).replace(/\\/g, '/') });
+});
+
+// 移动文件/文件夹到指定目录
+app.post('/api/move', (req, res) => {
+  const { path: itemPath, targetDir } = req.body;
+  if (!itemPath || targetDir === undefined) return res.status(400).json({ error: '缺少参数' });
+  const srcFull = path.resolve(ARTICLES_DIR, itemPath);
+  if (!safePath(srcFull, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  if (!fs.existsSync(srcFull)) return res.status(404).json({ error: '源文件不存在' });
+  const dstDir = targetDir ? path.resolve(ARTICLES_DIR, targetDir) : ARTICLES_DIR;
+  if (!safePath(dstDir, ARTICLES_DIR)) return res.status(403).json({ error: '目标目录非法' });
+  fs.mkdirSync(dstDir, { recursive: true });
+  const baseName = path.basename(srcFull);
+  let dstFull = path.join(dstDir, baseName);
+  if (fs.existsSync(dstFull)) {
+    const ext = path.extname(baseName);
+    const stem = path.basename(baseName, ext);
+    let c = 1;
+    while (fs.existsSync(path.join(dstDir, stem + '_' + c + ext))) c++;
+    dstFull = path.join(dstDir, stem + '_' + c + ext);
+  }
+  try { fs.renameSync(srcFull, dstFull); } catch (e) { return res.status(500).json({ error: '移动失败: ' + e.message }); }
+  dirCache.del('tree'); fileCache.del(srcFull);
+  res.json({ success: true, path: path.relative(ARTICLES_DIR, dstFull).replace(/\\/g, '/') });
+});
+app.get('/api/tasks/today', (req, res) => {
+  const now = new Date();
+  const df = new Intl.DateTimeFormat('zh-CN', {timeZone:'Asia/Shanghai', year:'numeric', month:'2-digit', day:'2-digit'});
+  const parts = df.formatToParts(now);
+  const dateStr = parts.find(p=>p.type==='year').value + '-' + parts.find(p=>p.type==='month').value + '-' + parts.find(p=>p.type==='day').value;
+  const tasks = [];
+  function walk(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { return; }
+    for (const entry of entries) {
+      if (entry.startsWith('.')) continue;
+      const full = path.join(dir, entry);
+      let stat;
+      try { stat = fs.statSync(full); } catch { continue; }
+      if (stat.isDirectory()) { walk(full); }
+      else if (entry.endsWith('.html')) {
+        let html;
+        try { html = fs.readFileSync(full, 'utf-8'); } catch { continue; }
+        const mdText = extractSourceMd(html);
+        for (const line of mdText.split('\n')) {
+          if (/^- \[( |x|X)\] /.test(line) && hasTag(line, '每日任务')) {
+            // 只显示当天的任务
+            const dateMatch = line.match(/📅 (\d{4}-\d{2}-\d{2})/);
+            if (dateMatch && dateMatch[1] !== dateStr) continue;
+            const done = /\[[xX]\]/.test(line);
+            const raw = line.trim();
+            let text = raw.replace(/^- \[( |x|X)\] /, '').trim();
+            text = text.replace(/<!--.*?-->/g, '').trim();
+            text = text.replace(/%%[^%]+%%/g, '').trim();
+            text = text.replace(/📅 \d{4}-\d{2}-\d{2}/g, '').trim();
+            text = text.replace(/～\d{2}:\d{2}/g, '').trim();
+            tasks.push({ text, done, raw, file: path.relative(ARTICLES_DIR, full) });
+          }
+        }
+      }
+      else if (entry.endsWith('.md')) {
+        let content;
+        try { content = fs.readFileSync(full, 'utf-8'); } catch { continue; }
+        for (const line of content.split('\n')) {
+          if (/^- \[( |x|X)\] /.test(line) && hasTag(line, '每日任务')) {
+            const dateMatch = line.match(/📅 (\d{4}-\d{2}-\d{2})/);
+            if (dateMatch && dateMatch[1] !== dateStr) continue;
+            const done = /\[[xX]\]/.test(line);
+            const raw = line.trim();
+            let text = raw.replace(/^- \[( |x|X)\] /, '').trim();
+            text = text.replace(/<!--.*?-->/g, '').trim();
+            text = text.replace(/%%[^%]+%%/g, '').trim();
+            text = text.replace(/📅 \d{4}-\d{2}-\d{2}/g, '').trim();
+            text = text.replace(/～\d{2}:\d{2}/g, '').trim();
+            tasks.push({ text, done, raw, file: path.relative(ARTICLES_DIR, full) });
+          }
+        }
+      }
+    }
+  }
+  walk(ARTICLES_DIR);
+  tasks.sort((a, b) => {
+    if (!a.due && !b.due) return a.text < b.text ? -1 : 1;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due < b.due ? -1 : 1;
+  });
+  res.json({ tasks, date: dateStr });
+});
+
+// 今日任务的模板（从 articles/今日任务.html 提取）
+app.get('/api/tasks/template', (req, res) => {
+  const now = new Date();
+  const df = new Intl.DateTimeFormat('zh-CN', {timeZone:'Asia/Shanghai', year:'numeric', month:'2-digit', day:'2-digit'});
+  const parts = df.formatToParts(now);
+  const dateStr = parts.find(p=>p.type==='year').value + '-' + parts.find(p=>p.type==='month').value + '-' + parts.find(p=>p.type==='day').value;
+  const dailyPath = path.join(ARTICLES_DIR, '任务管理/今日任务.html');
+  
+  const templateLines = [];
+  if (fs.existsSync(dailyPath)) {
+    const html = fs.readFileSync(dailyPath, 'utf-8');
+    const mdText = extractSourceMd(html);
+    for (const line of mdText.split('\n')) {
+      if (/^- \[( |x|X)\] /.test(line) && hasTag(line, '每日任务模板')) {
+        templateLines.push(line.replace(/\[[xX]\]/, '[ ]'));
+      }
+    }
+  }
+  // 如果没有数据，返回空数组（模板文件 articles/今日任务.html 已创建）
+  // 用户可直接编辑该文件增删模板项
+  res.json({ lines: templateLines, date: dateStr });
+});
+
+// 从每日任务模板生成今日任务（前置插入到 今日任务.html）
+app.post('/api/tasks/today/generate', (req, res) => {
+  const now = new Date();
+  const df = new Intl.DateTimeFormat('zh-CN', {timeZone:'Asia/Shanghai', year:'numeric', month:'2-digit', day:'2-digit'});
+  const parts = df.formatToParts(now);
+  const dateStr = parts.find(p=>p.type==='year').value + '-' + parts.find(p=>p.type==='month').value + '-' + parts.find(p=>p.type==='day').value;
+  const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  const weekday = weekdays[now.getDay()];
+  const dailyPath = path.join(ARTICLES_DIR, '任务管理/今日任务.html');
+  const templatePath = path.join(ARTICLES_DIR, '任务管理/每日任务模板.html');
+
+  if (!fs.existsSync(dailyPath)) return res.status(404).json({ error: '今日任务.html 不存在' });
+  if (!fs.existsSync(templatePath)) return res.status(404).json({ error: '每日任务模板.html 不存在' });
+
+  // 从 每日任务模板.html 的 source-md 读取模板项
+  const templateHtml = fs.readFileSync(templatePath, 'utf-8');
+  const templateMd = extractSourceMd(templateHtml);
+  const items = [];
+  for (const line of templateMd.split('\n')) {
+    const m = line.match(/^- (.+)$/);
+    if (m) items.push(m[1].trim());
+  }
+  if (items.length === 0) return res.status(400).json({ error: '模板中未找到任务项' });
+
+  // 读取 今日任务.html
+  let html = fs.readFileSync(dailyPath, 'utf-8');
+  let mdText = extractSourceMd(html);
+
+  // 去重检查：如果今日日期已在 source-md 中则跳过
+  if (mdText.includes(dateStr)) {
+    return res.status(409).json({ error: '今日任务已存在', date: dateStr });
+  }
+
+  // 天气表情（按时间段选）
+  const hour = now.getHours();
+  const weather = hour < 6 ? '🌙' : hour < 12 ? '🌞' : hour < 18 ? '⛅' : '🌆';
+
+  // 构建新任务区
+  const newLines = items.map(item => `- [ ] ${item} 📅 ${dateStr}%%每日任务%%`);
+  const newSection = `${weather} ${dateStr} | ${weekday}\n🧘 今日计划\n${newLines.join('\n')}`;
+
+  // 在 # 今日任务 标题后插入，旧内容移下去用 --- 分隔
+  const headingMatch = mdText.match(/^(# .+)$/m);
+  if (headingMatch) {
+    const idx = headingMatch.index + headingMatch[0].length;
+    mdText = mdText.substring(0, idx) + '\n\n' + newSection + '\n\n---\n\n' + mdText.substring(idx).trim();
+  } else {
+    mdText = mdText.trim() + '\n\n' + newSection;
+  }
+
+  // 重建并保存
+  const title = extractTitle(mdText);
+  const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
+  const newHtml = buildHtml(title, bodyHtml, mdText);
+  try {
+    fs.writeFileSync(dailyPath, newHtml, 'utf-8');
+    res.json({ success: true, count: items.length, date: dateStr });
+  } catch (e) {
+    res.status(500).json({ error: '写入失败: ' + e.message });
+  }
+});
+
+
+// 添加单条今日任务（自定义内容，表单提交）
+app.post('/api/tasks/today/add-item', (req, res) => {
+  const { content, date } = req.body;
+  if (!content || !date) return res.status(400).json({ error: '缺少任务内容或日期' });
+
+  const dailyPath = path.join(ARTICLES_DIR, '任务管理/今日任务.html');
+  if (!fs.existsSync(dailyPath)) return res.status(404).json({ error: '今日任务.html 不存在' });
+
+  let html = fs.readFileSync(dailyPath, 'utf-8');
+  let mdText = extractSourceMd(html);
+
+  // 构建新行
+  const line = '- [ ] ' + content + ' 📅 ' + date + '%%每日任务%%';
+
+  // 查找今天日期所在段落，追加到末尾
+  const lines = mdText.split('\n');
+  let insertIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i].includes(date) && /^- \[( |x|X)\] /.test(lines[i]) && lines[i].includes('%%每日任务%%')) {
+      insertIdx = i + 1;
+      break;
+    }
+  }
+  
+  if (insertIdx < 0) {
+    mdText = mdText.trim() + '\n' + line;
+  } else {
+    lines.splice(insertIdx, 0, line);
+    mdText = lines.join('\n');
+  }
+
+  const title = extractTitle(mdText);
+  const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
+  const newHtml = buildHtml(title, bodyHtml, mdText);
+  try {
+    fs.writeFileSync(dailyPath, newHtml, 'utf-8');
+    res.json({ success: true, line });
+  } catch (e) {
+    res.status(500).json({ error: '写入失败: ' + e.message });
+  }
+});
+
+// 添加提醒事项（从模板追加到 提醒事项.html）// 添加提醒事项（从模板追加到 提醒事项.html）
+app.post('/api/tasks/reminders/add', (req, res) => {
+  const remPath = path.join(ARTICLES_DIR, '任务管理/提醒事项.html');
+
+  if (!fs.existsSync(remPath)) return res.status(404).json({ error: '提醒事项.html 不存在' });
+
+  let html = fs.readFileSync(remPath, 'utf-8');
+  let mdText = extractSourceMd(html);
+  const lines = mdText.split('\n');
+  const newItems = [];
+  for (const line of lines) {
+    if (hasTag(line, '提醒事项')) {
+      newItems.push(line.replace(/\[[xX]\]/, '[ ]'));
+    }
+  }
+  if (newItems.length === 0) return res.status(400).json({ error: '模板中未找到提醒事项行' });
+
+  mdText += '\n' + newItems.join('\n');
+  const title = extractTitle(mdText);
+  const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
+  const newHtml = buildHtml(title, bodyHtml, mdText);
+  try {
+    fs.writeFileSync(remPath, newHtml, 'utf-8');
+    res.json({ success: true, count: newItems.length });
+  } catch (e) {
+    res.status(500).json({ error: '写入失败: ' + e.message });
+  }
+});
+
+// 保存每日任务（勾选切换）
+app.post('/api/tasks/today/save', (req, res) => {
+  const { file, raw } = req.body;
+  if (!file || !raw) return res.status(400).json({ error: '缺少参数' });
+  const filePath = path.resolve(ARTICLES_DIR, file);
+  if (!safePath(filePath, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '文件不存在' });
+
+  if (file.endsWith('.html')) {
+    let html = fs.readFileSync(filePath, 'utf-8');
+    const mdText = extractSourceMd(html);
+    // replaceMdLineTagAware 自行计算 oldRaw、匹配行、保留标签
+    const newMdText = replaceMdLineTagAware(mdText, raw);
+    if (!newMdText) return res.status(404).json({ error: '未找到对应任务行' });
+    const title = extractTitle(newMdText);
+    const bodyHtml = mdParse(newMdText, { breaks: true, gfm: true });
+    const newHtml = buildHtml(title, bodyHtml, newMdText);
+    try { fs.writeFileSync(filePath, newHtml, 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+    res.json({ success: true });
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n');
+  const oldRaw = /\[x\]/i.test(raw) ? raw.replace(/\[x\]/i, '[ ]') : raw.replace('[ ]', '[x]');
+  const idx = findLineIdx(lines, oldRaw);
+  if (idx === -1) return res.status(404).json({ error: '未找到对应任务行' });
+  lines[idx] = raw;
+
+  try { fs.writeFileSync(filePath, lines.join('\n'), 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+  res.json({ success: true });
+});
+
+app.get('/api/tasks/other', (req, res) => {
+  const tasks = [];
+  function walk(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { return; }
+    for (const entry of entries) {
+      if (entry.startsWith('.')) continue;
+      const full = path.join(dir, entry);
+      let stat;
+      try { stat = fs.statSync(full); } catch { continue; }
+      if (stat.isDirectory()) { walk(full); }
+      else if (entry.endsWith('.html')) {
+        let html;
+        try { html = fs.readFileSync(full, 'utf-8'); } catch { continue; }
+        const mdText = extractSourceMd(html);
+        for (const line of mdText.split('\n')) {
+          if (/^- \[( |x|X)\] /.test(line) && !hasTag(line, '每日任务') && !hasTag(line, '提醒事项')) {
+            const done = /\[[xX]\]/.test(line);
+            const text = line.replace(/^- \[( |x|X)\] /, '').trim();
+            const dueMatch = text.match(/📅 (\d{4}-\d{2}-\d{2})/);
+            tasks.push({
+              text: text.replace(/📅 \d{4}-\d{2}-\d{2}/, '').replace(/～\d{2}:\d{2}/, '').replace(/🔺.*/, '').replace(/<!--.*?-->/g, '').trim(),
+              due: dueMatch ? dueMatch[1] : null,
+              file: path.relative(ARTICLES_DIR, full),
+              raw: line.trim(),
+              done,
+            });
+          }
+        }
+      }
+      else if (entry.endsWith('.md')) {
+        let content;
+        try { content = fs.readFileSync(full, 'utf-8'); } catch { continue; }
+        for (const line of content.split('\n')) {
+          if (/^- \[( |x|X)\] /.test(line) && !hasTag(line, '每日任务') && !hasTag(line, '提醒事项')) {
+            const done = /\[[xX]\]/.test(line);
+            const text = line.replace(/^- \[( |x|X)\] /, '').trim();
+            const dueMatch = text.match(/📅 (\d{4}-\d{2}-\d{2})/);
+            tasks.push({
+              text: text.replace(/📅 \d{4}-\d{2}-\d{2}/, '').replace(/～\d{2}:\d{2}/, '').replace(/🔺.*/, '').replace(/<!--.*?-->/g, '').trim(),
+              due: dueMatch ? dueMatch[1] : null,
+              file: path.relative(ARTICLES_DIR, full),
+              raw: line.trim(),
+              done,
+            });
+          }
+        }
+      }
+    }
+  }
+  walk(ARTICLES_DIR);
+  tasks.sort((a, b) => {
+    if (!a.due && !b.due) return a.text < b.text ? -1 : 1;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due < b.due ? -1 : 1;
+  });
+  res.json({ tasks });
+});
+
+app.get('/api/tasks/reminders', (req, res) => {
+  const tasks = [];
+  function walk(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { return; }
+    for (const entry of entries) {
+      if (entry.startsWith('.')) continue;
+      const full = path.join(dir, entry);
+      let stat;
+      try { stat = fs.statSync(full); } catch { continue; }
+      if (stat.isDirectory()) { walk(full); }
+      else if (entry.endsWith('.html')) {
+        let html;
+        try { html = fs.readFileSync(full, 'utf-8'); } catch { continue; }
+        const mdText = extractSourceMd(html);
+        for (const line of mdText.split('\n')) {
+          if (/^- \[( |x|X)\] /.test(line) && hasTag(line, '提醒事项')) {
+            const done = /\[[xX]\]/.test(line);
+            const raw = line.trim();
+            let text = raw.replace(/^- \[( |x|X)\] /, '').trim();
+            text = text.replace(/<!--.*?-->/g, '').trim();
+            text = text.replace(/%%[^%]+%%/g, '').trim();
+            const dateMatch = text.match(/📅 (\d{4}-\d{2}-\d{2})/);
+            const timeMatch = text.match(/～(\d{2}:\d{2})/);
+            tasks.push({
+              text: text.replace(/📅 \d{4}-\d{2}-\d{2}/, '').replace(/～\d{2}:\d{2}/, '').trim(),
+              due: dateMatch ? dateMatch[1] : null,
+              time: timeMatch ? timeMatch[1] : null,
+              file: path.relative(ARTICLES_DIR, full),
+              raw,
+              done,
+            });
+          }
+        }
+      }
+      else if (entry.endsWith('.md')) {
+        let content;
+        try { content = fs.readFileSync(full, 'utf-8'); } catch { continue; }
+        for (const line of content.split('\n')) {
+          if (/^- \[( |x|X)\] /.test(line) && hasTag(line, '提醒事项')) {
+            const done = /\[[xX]\]/.test(line);
+            const raw = line.trim();
+            let text = raw.replace(/^- \[( |x|X)\] /, '').trim();
+            text = text.replace(/<!--.*?-->/g, '').trim();
+            text = text.replace(/%%[^%]+%%/g, '').trim();
+            const dateMatch = text.match(/📅 (\d{4}-\d{2}-\d{2})/);
+            const timeMatch = text.match(/～(\d{2}:\d{2})/);
+            tasks.push({
+              text: text.replace(/📅 \d{4}-\d{2}-\d{2}/, '').replace(/～\d{2}:\d{2}/, '').trim(),
+              due: dateMatch ? dateMatch[1] : null,
+              time: timeMatch ? timeMatch[1] : null,
+              file: path.relative(ARTICLES_DIR, full),
+              raw,
+              done,
+            });
+          }
+        }
+      }
+    }
+  }
+  walk(ARTICLES_DIR);
+  tasks.sort((a, b) => {
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due < b.due ? -1 : 1;
+  });
+  res.json({ tasks });
+});
+
+app.post('/api/tasks/reminders/save', (req, res) => {
+  const { file, raw } = req.body;
+  if (!file || !raw) return res.status(400).json({ error: '缺少参数' });
+  const filePath = path.resolve(ARTICLES_DIR, file);
+  if (!safePath(filePath, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '文件不存在' });
+
+  if (file.endsWith('.html')) {
+    let html = fs.readFileSync(filePath, 'utf-8');
+    const mdText = extractSourceMd(html);
+    const newMdText = replaceMdLineTagAware(mdText, raw);
+    if (!newMdText) return res.status(404).json({ error: '未找到对应任务行' });
+    const title = extractTitle(newMdText);
+    const bodyHtml = mdParse(newMdText, { breaks: true, gfm: true });
+    const newHtml = buildHtml(title, bodyHtml, newMdText);
+    try { fs.writeFileSync(filePath, newHtml, 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+    res.json({ success: true });
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n');
+  const oldRaw = /\[x\]/i.test(raw) ? raw.replace(/\[x\]/i, '[ ]') : raw.replace('[ ]', '[x]');
+  const idx = findLineIdx(lines, oldRaw);
+  if (idx === -1) return res.status(404).json({ error: '未找到对应任务行' });
+  lines[idx] = raw;
+
+  try { fs.writeFileSync(filePath, lines.join('\n'), 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+  res.json({ success: true });
+});
+
+// 添加单条提醒事项（自定义内容，前端表单提交）
+app.post('/api/tasks/reminders/add-item', (req, res) => {
+  const { content, date, time } = req.body;
+  if (!content || !date) return res.status(400).json({ error: '缺少提醒内容或日期' });
+
+  const remPath = path.join(ARTICLES_DIR, '任务管理/提醒事项.html');
+  if (!fs.existsSync(remPath)) return res.status(404).json({ error: '提醒事项.html 不存在' });
+
+  let html = fs.readFileSync(remPath, 'utf-8');
+  let mdText = extractSourceMd(html);
+
+  // 构建新行
+  const line = '- [ ] ' + content + ' 📅 ' + date + (time ? ' ～' + time : '') + '%%提醒事项%%';
+
+  // 找到第一个现有 checklist 项，插入在其前面（\n 避免 blank line 导致 <p> 包裹）
+  const itemIdx = mdText.indexOf('\n- [');
+  let newMdText;
+  if (itemIdx >= 0) {
+    newMdText = mdText.substring(0, itemIdx).trim() + '\n' + line + '\n' + mdText.substring(itemIdx).trim();
+  } else {
+    // 无现有项，插在 <script> 之前
+    const scriptIdx = mdText.indexOf('<script>');
+    if (scriptIdx >= 0) {
+      newMdText = mdText.substring(0, scriptIdx).trim() + '\n\n' + line + '\n\n' + mdText.substring(scriptIdx);
+    } else {
+      newMdText = mdText.trim() + '\n\n' + line;
+    }
+  }
+
+  const title = extractTitle(newMdText);
+  const bodyHtml = mdParse(newMdText, { breaks: true, gfm: true });
+  const newHtml = buildHtml(title, bodyHtml, newMdText);
+  try { fs.writeFileSync(remPath, newHtml, 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+  res.json({ success: true, line });
+});
+
+// 保存其他待办事项（勾选切换）
+app.post('/api/tasks/other/save', (req, res) => {
+  const { file, raw } = req.body;
+  if (!file || !raw) return res.status(400).json({ error: '缺少参数' });
+  const filePath = path.resolve(ARTICLES_DIR, file);
+  if (!safePath(filePath, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '文件不存在' });
+
+  if (file.endsWith('.html')) {
+    let html = fs.readFileSync(filePath, 'utf-8');
+    const mdText = extractSourceMd(html);
+    const newMdText = replaceMdLineTagAware(mdText, raw);
+    if (!newMdText) return res.status(404).json({ error: '未找到对应任务行' });
+    const title = extractTitle(newMdText);
+    const bodyHtml = mdParse(newMdText, { breaks: true, gfm: true });
+    const newHtml = buildHtml(title, bodyHtml, newMdText);
+    try { fs.writeFileSync(filePath, newHtml, 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+    res.json({ success: true });
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n');
+  const oldRaw = /\[x\]/i.test(raw) ? raw.replace(/\[x\]/i, '[ ]') : raw.replace('[ ]', '[x]');
+  const idx = findLineIdx(lines, oldRaw);
+  if (idx === -1) return res.status(404).json({ error: '未找到对应任务行' });
+  lines[idx] = raw;
+  try { fs.writeFileSync(filePath, lines.join('\n'), 'utf-8'); } catch (e) { return res.status(500).json({ error: '写入失败: ' + e.message }); }
+  res.json({ success: true });
+});
+
+// 读取 .md 文件并转为 HTML（不修改原文件）
+app.get('/api/render-md', (req, res) => {
+  const p = req.query.path;
+  if (!p) return res.status(400).json({ error: '缺少 path' });
+  const filePath = path.resolve(ARTICLES_DIR, p);
+
+  });
+
+// tags api
+app.get("/api/tags", function(req, res) {
+  var tag = (req.query.tag || "").trim();
+  var results = [];
+  function walk(dir, prefix) {
+    var entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch(e) { return; }
+    for (var i = 0; i < entries.length; i++) {
+      var entry = entries[i];
+      if (entry.name.startsWith('.')) continue;
+      var full = path.join(dir, entry.name);
+      var rel = prefix ? prefix + '/' + entry.name : entry.name;
+      if (entry.isDirectory()) { walk(full, rel); continue; }
+      if (!entry.name.endsWith('.html') && !entry.name.endsWith('.md')) continue;
+      try {
+        var c = fs.readFileSync(full, 'utf-8');
+        var tags = extractTags(c);
+        if (!tag || tags.some(function(t) { return t.toLowerCase().includes(tag.toLowerCase()); })) {
+          var title = entry.name.replace(/\.(html|md)$/, '');
+          var tm = c.match(/<title>(.+?)<\/title>/i);
+          if (tm) title = tm[1];
+          results.push({ name: entry.name, path: rel, title: title, tags: tags });
+        }
+      } catch(e) {}
+    }
+  }
+  walk(ARTICLES_DIR, '');
+  if (!tag) {
+    var allTags = [...new Set(results.flatMap(function(r) { return r.tags; }))].sort();
+    return res.json({ tags: allTags });
+  }
+  res.json({ files: results.slice(0, 50) });
+});
+
+
+// history api
+app.get("/api/history", function(req, res) {
+  var p = req.query.path;
+  if (!p) return res.status(400).json({ error: "missing path" });
+  var relPath = p.replace(/^\/+/g, "");
+  var histDir = path.join(HISTORY_DIR, relPath);
+  if (!fs.existsSync(histDir)) return res.json({ versions: [] });
+  var snapshots = fs.readdirSync(histDir)
+    .filter(function(f) { return f.startsWith(path.basename(relPath)); })
+    .sort().reverse().slice(0, 50)
+    .map(function(f) {
+      var ts = f.split(".").slice(1).join(".");
+      var size = fs.statSync(path.join(histDir, f)).size;
+      return { file: f, time: ts.replace(/-/g, ":").replace(/T/, " ").replace(/Z$/, ""), size: size };
+    });
+  res.json({ versions: snapshots });
+});
+
+app.get("/api/history/view", function(req, res) {
+  var p = req.query.path;
+  var v = req.query.version;
+  if (!p || !v) return res.status(400).json({ error: "missing params" });
+  var histPath = path.join(HISTORY_DIR, p.replace(/^\/+/g, "") + "." + v);
+  if (!fs.existsSync(histPath)) return res.status(404).json({ error: "version not found" });
+  var content = fs.readFileSync(histPath, "utf-8");
+  res.json({ content: content });
+});
+
+app.post("/api/history/restore", function(req, res) {
+  var p = req.body.path;
+  var v = req.body.version;
+  if (!p || !v) return res.status(400).json({ error: "missing params" });
+  var histPath = path.join(HISTORY_DIR, p.replace(/^\/+/g, "") + "." + v);
+  if (!fs.existsSync(histPath)) return res.status(404).json({ error: "version not found" });
+  var filePath = path.resolve(ARTICLES_DIR, p);
+
+  if (!safePath(filePath, ARTICLES_DIR)) return res.status(403).json({ error: '非法路径' });
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: '文件不存在' });
+
+  let content = fs.readFileSync(filePath, 'utf-8');
+  let title = '无标题';
+  const tm = content.match(/^#\s+(.+)$/m);
+  if (tm) title = tm[1].trim();
+  const bodyHtml = mdParse(content, { breaks: true, gfm: true });
+  const html = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + escHtml(title) + '</title>\n<link rel="stylesheet" href="/static/github-markdown.min.css">\n<style>\n  body { margin:0; background:#fff; }\n  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px; }\n  @media (max-width:767px) { .markdown-body { padding: 15px; } }\n</style>\n</head>\n<body>\n<article class="markdown-body">' + bodyHtml + '</article>\n</body>\n</html>';
+      res.json({ html, title, path: p });
+});
+
+
+
+// 搜索文件
+app.get('/api/search', (req, res) => {
+  const q = (req.query.q || '').trim().toLowerCase();
+  if (!q) return res.json({ files: [] });
+  const results = [];
+  function walk(dir, prefix) {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const full = path.join(dir, entry.name);
+      const rel = prefix ? prefix + '/' + entry.name : entry.name;
+      if (entry.name.toLowerCase().includes(q)) {
+        results.push({ name: entry.name, path: rel, isDir: entry.isDirectory(), dir: prefix || '' });
+      }
+      if (entry.isDirectory()) walk(full, rel);
+    }
+  }
+  walk(ARTICLES_DIR, '');
+  res.json({ files: results.slice(0, 50) });
+});
+
+
+app.use('/articles', express.static(ARTICLES_DIR));
+app.use('/static', express.static(path.join(BASE_DIR, 'static')));
+app.get('/files', (req, res) => res.sendFile(path.join(BASE_DIR, 'templates', 'index.html')));
+app.get('/', (req, res) => res.sendFile(path.join(BASE_DIR, 'templates', 'index.html')));
+
+const PORT = process.argv[2] || 8765;
+
+// default hooks
+hooks.register('beforeSave', async function(ctx) {
+  if (ctx.filePath) console.log('[Hook] beforeSave:', ctx.filePath);
+});
+hooks.register('afterSave', async function(ctx) {
+  if (ctx.filePath) console.log('[Hook] afterSave:', ctx.filePath);
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => console.log('✨ 江月个人空间: http://0.0.0.0:' + PORT));
+server.keepAliveTimeout = 30000; // 30s keep-alive
+server.headersTimeout = 31000;
+

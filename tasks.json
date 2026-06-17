@@ -1,0 +1,23 @@
+[
+  {
+    "title": "福建日报下载进度确认",
+    "status": "done",
+    "done": false
+  },
+  {
+    "title": "部署 liruibiji 到目标容器",
+    "status": "pending"
+  },
+  {
+    "title": "完善三栏布局样式调整",
+    "status": "in_progress"
+  },
+  {
+    "title": "配置 Nginx 目录浏览",
+    "status": "pending"
+  },
+  {
+    "title": "发送本周工作总结报告",
+    "status": "pending"
+  }
+]

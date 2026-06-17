@@ -1,0 +1,961 @@
+<body>
+
+<!-- 顶栏 -->
+<div class="header">
+  <button class="sidebar-toggle btn btn-sm text-white" onclick="toggleSidebar()" style="border:none;background:transparent;padding:4px 8px;font-size:20px;line-height:1"><i class="bi bi-list"></i></button>
+  <a class="brand" href="/"><i class="bi bi-journal-text"></i> 江月个人空间</a>
+  <span style="font-size:13px;color:#aaa;margin-left:auto" id="headerDate"></span>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="main-wrap">
+
+  <!-- 左：目录树 -->
+  <div class="sidebar-left">
+    <div class="panel-head"><span><i class="bi bi-folder2-open"></i> 目录</span><span style="cursor:pointer;font-size:14px;color:#888" onclick="toggleSearch()" title="搜索文件"><i class="bi bi-search"></i></span></div>
+
+    
+    <div id="searchArea" style="display:none;padding:8px 10px;border-bottom:1px solid #f0f0f0">
+      <div style="display:flex;gap:6px">
+        <input id="searchInput" type="text" placeholder="搜索文件名..." style="flex:1;padding:6px 10px;border:1px solid #d0d7de;border-radius:6px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')doSearch()">
+        <button onclick="doSearch()" style="padding:4px 8px;background:#0969da;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px" title="搜索"><i class="bi bi-search" style="font-size:12px"></i></button>
+        <button onclick="toggleSearch()" style="padding:4px 8px;background:transparent;color:#888;border:1px solid #d0d7de;border-radius:6px;cursor:pointer;font-size:13px" title="关闭搜索">X</button>
+      </div>
+      <div id="searchResults" style="margin-top:6px;max-height:300px;overflow-y:auto;font-size:13px"></div>
+    </div>
+
+    <div id="dirTreeStatus" style="padding:4px 14px;font-size:12px;color:#999"></div>
+    <div class="dir-tree" id="dirTree"></div>
+    </div>
+
+  <!-- 批量操作栏 -->
+  
+  <!-- 中：文件列表 / 查看 / 编辑 -->
+  <div class="center-col">
+<div class="batch-bar" id="batchBar">
+    <span id="batchCount">0 项</span>
+    <button class="btn btn-outline-danger btn-sm" onclick="batchDelete()"><i class="bi bi-trash"></i> 批量删除</button>
+    <button class="btn btn-outline-secondary btn-sm" onclick="batchMove()"><i class="bi bi-arrow-right"></i> 批量移动</button>
+  </div>
+
+    <!-- 文件列表模式 -->
+    <div id="modeList" class="mode-view active">
+      <div class="toolbar">
+        <div class="breadcrumb-wrap"><nav aria-label="breadcrumb"><ol class="breadcrumb" id="breadcrumb"><li class="breadcrumb-item"><a onclick="loadDir('')" title="首页" style="font-weight:500">首页</a></li>
+            <li class="breadcrumb-item"><a onclick="loadDir('')">根目录</a></li></ol></nav></div>
+        <button class="btn btn-outline-primary btn-sm" onclick="newFile()"><i class="bi bi-file-plus"></i> <span>新建文件</span></button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="newFolder()"><i class="bi bi-folder-plus"></i> <span>新建文件夹</span></button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="uploadFile()"><i class="bi bi-upload"></i> <span>上传</span></button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="loadDir(currentDir)"><i class="bi bi-arrow-clockwise"></i> <span>刷新</span></button>
+      </div>
+      <div class="file-table-wrap" id="fileTableWrap">
+        <table class="file-table" id="fileTable"><thead><tr><th class="num-col" style="width:32px"><input type="checkbox" id="selectAllCheckbox" onchange="var c=this.checked;document.querySelectorAll('.file-item-checkbox').forEach(function(x){x.checked=c;toggleFileSelect(x.closest('.file-row').dataset.path,c)})"></th><th>名称</th><th class="size-col">大小</th><th class="time-col">修改时间</th><th class="action-col">操作</th></tr></thead><tbody id="fileList"></tbody></table>
+        <div class="empty-state" id="emptyState" style="display:none"><i class="bi bi-inbox"></i><p>此目录为空</p></div>
+        <div id="listStatus" style="padding:10px 16px;text-align:center;font-size:13px;color:#999"></div>
+      </div>
+    </div>
+
+    <!-- 查看模式 -->
+    <div id="modeView" class="mode-view">
+      <div class="view-bar">
+        <button class="btn btn-outline-secondary btn-sm" onclick="backToList()"><i class="bi bi-arrow-left"></i> <span>返回</span></button>
+        <span class="view-title" id="viewTitle">-</span>
+        <button class="btn btn-outline-primary btn-sm" id="viewEditBtn" onclick="editFromView()"><i class="bi bi-pencil"></i> <span>编辑</span></button>
+      </div>
+      <div class="view-content" id="viewContent"><iframe id="viewFrame"></iframe></div>
+    </div>
+
+    <!-- 编辑模式 -->
+    <div id="modeEdit" class="mode-view">
+      <div class="edit-bar">
+        <button class="btn btn-outline-secondary btn-sm" onclick="backToView()"><i class="bi bi-x-lg"></i> <span>取消</span></button>
+        <span class="view-title" id="editTitle">-</span>
+        <button class="btn btn-outline-primary btn-sm" onclick="saveEdit()"><i class="bi bi-check-lg"></i> <span>保存</span></button>
+      </div>
+      <div class="edit-wrap">
+        <div class="edit-md">
+          <div class="md-toolbar" id="mdToolbar">
+            <button class="btn-tb" onclick="wrapMd('**','**')" title="粗体"><i class="bi bi-type-bold"></i></button>
+            <button class="btn-tb" onclick="wrapMd('*','*')" title="斜体"><i class="bi bi-type-italic"></i></button>
+            <button class="btn-tb" onclick="wrapMd('~~','~~')" title="删除线"><i class="bi bi-type-strikethrough"></i></button>
+            <span class="tb-divider"></span>
+            <button class="btn-tb" onclick="wrapMd('# ','')" title="标题"><i class="bi bi-type-h1"></i></button>
+            <button class="btn-tb" onclick="wrapMd('## ','')" title="标题2"><i class="bi bi-type-h2"></i></button>
+            <button class="btn-tb" onclick="wrapMd('### ','')" title="标题3"><i class="bi bi-type-h3"></i></button>
+            <span class="tb-divider"></span>
+            <button class="btn-tb" onclick="wrapMd('- ','')" title="无序列表"><i class="bi bi-list-ul"></i></button>
+            <button class="btn-tb" onclick="wrapMd('1. ','')" title="有序列表"><i class="bi bi-list-ol"></i></button>
+            <button class="btn-tb" onclick="wrapMd('- [ ] ','')" title="任务"><i class="bi bi-square"></i></button>
+            <span class="tb-divider"></span>
+            <button class="btn-tb" onclick="wrapMd('[title](',')')" title="链接"><i class="bi bi-link-45deg"></i></button>
+            <button class="btn-tb" onclick="wrapMd('![](','https://)')" title="图片"><i class="bi bi-image"></i></button>
+            <button class="btn-tb" onclick="wrapMd('> ','')" title="引用"><i class="bi bi-quote"></i></button>
+            <button class="btn-tb" onclick="wrapMd('```\n','\n```')" title="代码块"><i class="bi bi-code-slash"></i></button>
+            <span class="tb-divider"></span>
+            <button class="btn-tb" onclick="insertMd('---\n')" title="分隔线"><i class="bi bi-dash-lg"></i></button>
+            <span class="tb-divider"></span>
+            <button class="btn-tb" onclick="undoEdit()" title="撤销"><i class="bi bi-arrow-counterclockwise"></i></button>
+            <button class="btn-tb" onclick="redoEdit()" title="重做"><i class="bi bi-arrow-clockwise"></i></button>
+            <button class="btn-tb tb-reorder" onclick="toggleReorder()" id="reorderBtn" title="排序"><i class="bi bi-arrow-down-up"></i></button>
+          </div>
+          <div id="cmEditor"></div>
+        </div>
+        <div class="edit-preview" id="editPreview"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: 新建文件 -->
+<div class="modal fade" id="newFileModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">新建文件</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input class="form-control" id="newFileName" placeholder="文件名（不加 .html 将自动添加）"></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary" onclick="doNewFile()">创建</button></div>
+</div></div></div>
+
+<!-- Modal: 新建文件夹 -->
+<div class="modal fade" id="newFolderModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">新建文件夹</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input class="form-control" id="newFolderName" placeholder="文件夹名称"></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary" onclick="doNewFolder()">创建</button></div>
+</div></div></div>
+
+<!-- Modal: 重命名 -->
+<div class="modal fade" id="renameModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">重命名</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input class="form-control" id="renameInput" placeholder="新名称"></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary" onclick="doRename()">重命名</button></div>
+</div></div></div>
+
+<!-- Modal: 删除确认 -->
+<div class="modal fade" id="deleteModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">确认删除</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><p id="deleteMsg">确定要删除该文件吗？</p></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-danger" onclick="doDelete()">删除</button></div>
+</div></div></div>
+
+<!-- Modal: 上传 -->
+<div class="modal fade" id="uploadModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">上传文件</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input class="form-control" type="file" id="uploadInput" accept=".html,.md" multiple></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary" onclick="doUpload()">上传</button></div>
+</div></div></div>
+
+<script src="/static/bootstrap.bundle.min.js"></script>
+<script src="/static/marked.min.js"></script>
+<script src="/static/codemirror-bundle.js"></script>
+<script>
+var _fromFileList=false;
+
+// ── iframe 导航历史 ──
+var navStack=['/articles/renwu.html'];
+var lastBack=0;
+
+// 从 iframe 内部链接点击触发的导航
+function navPush(url){
+  var u=decodeURIComponent(url);
+  if(navStack[navStack.length-1]!==u) navStack.push(u);
+  document.getElementById('viewFrame').src=u;
+  document.getElementById('viewTitle').textContent=u.includes('renwu')?'工作中心':u.includes('今日任务')?'今日任务':u.includes('提醒事项')?'提醒事项':decodeURIComponent(u.split('/').pop()||'-');
+}
+
+document.getElementById('viewFrame').addEventListener('load',function(){
+  try{
+    var s=decodeURIComponent(new URL(this.src).pathname);
+    // 更新标题
+    document.getElementById('viewTitle').textContent=s.includes('renwu')?'工作中心':s.includes('今日任务')?'今日任务':s.includes('提醒事项')?'提醒事项':s.split('/').pop()||'-';
+    // 静默导航（返回操作）不记录到 navStack
+    if(window.silent){window.silent=false}else if(navStack[navStack.length-1]!==s) navStack.push(s);
+    // 自适应 iframe 高度（含延迟重试，适配异步渲染）
+    try{
+      var doc=this.contentDocument||this.contentWindow.document;
+      if(doc&&doc.body){
+        var f=document.getElementById("viewFrame");
+        function adj(){var h=doc.body.scrollHeight;f.style.height=Math.max(h,200)+"px"}
+        adj();
+        setTimeout(adj,500);
+        var obs=new MutationObserver(function(){clearTimeout(obs._t);obs._t=setTimeout(adj,100)});
+        obs.observe(doc.body,{childList:true,subtree:true,attributes:true});
+      }
+    }catch(e){}
+    // 注入导航通知脚本到 iframe，让每个页面加载时通知父窗口
+    try{
+      var doc=this.contentDocument||this.contentWindow.document;
+      var scr=doc.createElement('script');
+      scr.textContent='parent.postMessage({nav:window.location.pathname},"*")';
+      doc.body.appendChild(scr);
+    }catch(e){}
+  }catch(e){}
+});
+
+// 接收 iframe 子页面的导航通知和高度调整
+window.addEventListener("message",function(e){
+  if(e.data&&e.data.nav&&navStack[navStack.length-1]!==e.data.nav)
+    navStack.push(e.data.nav);
+  if(e.data&&e.data.type==="resize"){
+    var f=document.getElementById("viewFrame");
+    if(f) f.style.height=Math.max(e.data.height||200,200)+"px"
+  }
+});
+function openPage(name){
+  if(pageMap[name]){
+    _fromFileList=false;
+    navStack=[decodeURIComponent(pageMap[name])];
+    document.getElementById('viewFrame').src=pageMap[name];
+    document.getElementById('viewTitle').textContent=pageTitle[name]||name;
+    showMode('modeView');
+  }
+}
+
+// ── 模式切换 ──
+function showMode(id){document.querySelectorAll('.mode-view').forEach(function(e){e.classList.toggle('active',e.id===id)})}
+
+// ── 目录树 ──
+var currentDir='',currentFile='',renameTarget='',deleteTarget='';
+var dirTreeData={};
+
+function toggleSidebar(){document.querySelector('.sidebar-left').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('show')}
+
+
+function toggleSearch(){
+  var sa=document.getElementById("searchArea");
+  var dt=document.getElementById("dirTree");
+  var ds=document.getElementById("dirTreeStatus");
+  if(sa.style.display!="none"){
+    sa.style.display="none";
+    dt.style.display="";
+    if(ds)ds.style.display="";
+  }else{
+    sa.style.display="block";
+    dt.style.display="none";
+    if(ds)ds.style.display="none";
+    document.getElementById("searchInput").focus();
+    document.getElementById("searchResults").innerHTML="";
+  }
+}
+
+function doSearch(){
+  var q=document.getElementById("searchInput").value.trim();
+  if(!q)return;
+  document.getElementById("searchResults").innerHTML='<div style="text-align:center;color:#999;padding:10px">搜索中...</div>';
+  fetch("/api/search?q="+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(data){
+    var html="";
+    if(data.files&&data.files.length){
+      data.files.forEach(function(f){
+        var icon=f.isDir?"<i class="bi bi-folder"></i>":"<i class="bi bi-file-text"></i>";
+        var clickCode=f.isDir ? "loadDir('"+escAttr(f.dir||"")+"')" : "viewSearchFile('"+escAttr(f.name)+"','"+escAttr(f.path)+"')";
+        html+="<div style="padding:5px 8px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:6px" onclick=""+clickCode+"" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">"+icon+"<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">"+esc(f.name)+"</span><span style="font-size:11px;color:#999;flex-shrink:0">"+esc(f.path)+"</span></div>";
+      });
+    }else{
+      html="<div style="text-align:center;color:#999;padding:10px">未找到匹配的文件</div>";
+    }
+    document.getElementById("searchResults").innerHTML=html;
+  }).catch(function(e){
+    document.getElementById("searchResults").innerHTML='<div style="text-align:center;color:#e74c3c;padding:10px">搜索失败</div>';
+  });
+}
+
+function viewSearchFile(name,path){
+  toggleSearch();
+  setTimeout(function(){
+    if(window.viewFile)viewFile(name,path);
+  },100);
+}
+
+function loadDirs(parent,path){
+  fetch('/api/dirs').then(function(r){return r.json()}).then(function(data){
+    dirTreeData=data;
+    renderDirTree(document.getElementById('dirTree'),data,path||'',true);
+  }).catch(function(e){console.error("目录树加载失败:",e)})
+}
+
+function renderDirTree(el,nodes,activePath,isRoot){
+  if(isRoot) el.innerHTML='<div class="dir-item'+(activePath===''?' active':'')+'" data-path="" onclick="loadDir(\'\')"><i class="bi bi-folder"></i><span class="name">根目录</span></div>';
+  else el.innerHTML='';
+  var items=Array.isArray(nodes)?nodes:(nodes&&nodes.dirs?nodes.dirs:[]);
+  items.forEach(function(d){
+    var div=document.createElement('div');
+    div.className='dir-item'+(activePath===d.path?' active':'');
+    div.dataset.path=d.path;
+    div.innerHTML='<span class="arrow'+(d._open?' expanded':'')+'">▶</span><i class="bi '+(d.children&&d.children.length?'bi-folder-fill':'bi-folder')+'"></i><span class="name">'+esc(d.name)+'</span>';
+    div.onclick=function(e){
+      if(e.target.classList.contains('arrow')){
+        // 展开/折叠
+        var child=this.nextElementSibling;
+        if(child&&child.classList.contains('dir-children')){
+          child.classList.toggle('open');
+          this.querySelector('.arrow').classList.toggle('expanded');
+        }
+      }else{
+        loadDir(d.path);
+      }
+    };
+    el.appendChild(div);
+    if(d.children&&d.children.length){
+      var childDiv=document.createElement('div');
+      childDiv.className='dir-children'+(d._open?' open':'');
+      renderDirTree(childDiv,{dirs:d.children},activePath);
+      el.appendChild(childDiv);
+    }
+  });
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ── 文件列表 ──
+function loadDir(dir){
+  currentDir=dir||'';
+  showMode('modeList');
+  // 移动端点击后收起侧栏
+  if(window.innerWidth<=768){document.querySelector('.sidebar-left').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('show')}
+  document.getElementById('dirTree').querySelectorAll('.dir-item').forEach(function(e){e.classList.remove('active')});
+  document.querySelector('#dirTree .dir-item[data-path="'+escAttr(currentDir)+'"]')&&document.querySelector('#dirTree .dir-item[data-path="'+escAttr(currentDir)+'"]').classList.add('active');
+  
+  fetch('/api/list?dir='+encodeURIComponent(currentDir)).then(function(r){return r.json()}).then(function(data){
+    // 从 path 构建面包屑
+    var parts=currentDir?currentDir.split('/'):[];
+    var bc=[];
+    var acc='';
+    parts.forEach(function(p){
+      acc=acc?(acc+'/'+p):p;
+      bc.push({name:p,path:acc});
+    });
+    renderBreadcrumb(bc);
+    if(data.error){document.getElementById('fileList').innerHTML='<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">'+esc(data.error)+'</td></tr>';return}
+    renderFileList(data.files||[]);
+  }).catch(function(e){console.error('文件列表加载失败:',e);document.getElementById('fileList').innerHTML='<tr><td colspan=5 style="text-align:center;color:#999;padding:20px">加载失败</td></tr>'})
+}
+
+function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}
+
+function renderBreadcrumb(bc){
+  var html='<li class="breadcrumb-item"><a onclick="loadDir(\'\')" title="首页" style="font-weight:500">首页</a></li><li class="breadcrumb-item"><a onclick="loadDir(\'\')">根目录</a></li>';
+  bc.forEach(function(b){html+='<li class="breadcrumb-item'+(b.active?' active':'')+'">'+(b.active?esc(b.name):'<a onclick="loadDir(\'+escAttr(b.path)+\')">'+esc(b.name)+'</a>')+'</li>'});
+  document.getElementById('breadcrumb').innerHTML=html;
+}
+
+function renderFileList(files){
+  var tbody=document.getElementById('fileList'),empty=document.getElementById('emptyState');
+  tbody.innerHTML='';
+  if(!files||files.length===0){empty.style.display='flex';document.getElementById('fileTable').style.display='none';return}
+  empty.style.display='none';document.getElementById('fileTable').style.display='';
+  files.forEach(function(f,i){
+    var tr=document.createElement('tr');
+    var icon=f.isDir?'<i class="bi bi-folder"></i>':'<i class="bi bi-file-text"></i>';
+    var nameClass=f.isDir?'file-name dir-name':'file-name';
+    var clickAction=f.isDir?'loadDir(\'+escAttr(f.path)+\')':'viewFile(\'+escAttr(f.name)+'',''+escAttr(f.path)+\')';
+    tr.className='file-row';
+    tr.draggable=!f.isDir;
+    tr.dataset.path=f.path;
+    tr.innerHTML='<td class="num-col"><input type="checkbox" class="file-item-checkbox" onchange="toggleFileSelect(\'\'+escAttr(f.path)+\'\',this.checked)"></td>' 
+      +'<td><div class="'+nameClass+'" onclick="'+clickAction+'">'+icon+' <span>'+esc(f.name)+'</span></div></td>'
+      +'<td class="size-col">'+(f.size||'-')+'</td>'
+      +'<td class="time-col">'+(f.mtime||'-')+'</td>'
+      +'<td class="file-actions">'
+      +(!f.isDir?'<a class="btn-link" href="javascript:void(0)" onclick="moveItem(''+escAttr(f.name)+'',''+escAttr(f.path)+\')" title="移动到"><i class="bi bi-arrow-right"></i></a> '')
+      +'<a class="btn-link" href="javascript:void(0)" onclick="renameItem(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\','+f.isDir+')" title="重命名"><i class="bi bi-pencil"></i></a> '
+      +'<a class="btn-link btn-del" href="javascript:void(0)" onclick="deleteItem(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\','+f.isDir+')" title="删除"><i class="bi bi-trash"></i></a>'
+      +'</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ── 查看文件 ──
+function viewFile(name,path){
+  currentFile=path||name;
+  _fromFileList=true;
+  navStack=[decodeURIComponent('/articles/'+encodeURIComponent(currentFile))];
+  showMode('modeView');
+  document.getElementById('viewTitle').textContent=name;
+  document.getElementById('viewFrame').src='/articles/'+encodeURIComponent(currentFile);
+}
+
+function backToList(){
+  if(Date.now()-lastBack<100)return;
+  lastBack=Date.now();
+  if(_fromFileList){
+    _fromFileList=false;
+    showMode('modeList');
+    document.getElementById('viewFrame').src='/articles/renwu.html';
+  }else if(navStack.length>1){
+    navStack.pop(); // 当前页
+    var prev=navStack.pop(); // 上一页
+    window.silent=true; // 标记为静默导航，load事件不重复记录
+    document.getElementById('viewFrame').src=prev;
+  }else{
+    try{document.getElementById('viewFrame').contentWindow.history.back()}catch(e){}
+  }
+}
+
+// ── 编辑文件 ──
+function wrapMd(before,after){
+  if(cmEditor){
+    cmEditor.focus();
+    var sel=cmEditor.state.selection.main;
+    var text=cmEditor.state.doc.sliceString(sel.from,sel.to);
+    cmEditor.dispatch({
+      changes:{from:sel.from,to:sel.to,insert:before+text+after},
+      selection:{anchor:sel.from+before.length,head:sel.from+before.length+text.length}
+    });
+  }else{
+    var ta=document.getElementById('editTextarea');
+    if(!ta)return;
+    var start=ta.selectionStart,end=ta.selectionEnd;
+    var selected=ta.value.substring(start,end);
+    ta.value=ta.value.substring(0,start)+before+selected+after+ta.value.substring(end);
+    ta.focus();ta.selectionStart=start+before.length;ta.selectionEnd=start+before.length+selected.length;
+    if(document.getElementById('editPreview')&&typeof marked!=='undefined'&&marked.parse)
+      document.getElementById('editPreview').innerHTML=marked.parse(ta.value);
+  }
+}
+function insertMd(text){
+  if(cmEditor){
+    cmEditor.focus();
+    var sel=cmEditor.state.selection.main;
+    cmEditor.dispatch({
+      changes:{from:sel.from,to:sel.to,insert:text},
+      selection:{anchor:sel.from+text.length}
+    });
+  }else{
+    var ta=document.getElementById('editTextarea');
+    if(!ta)return;
+    var pos=ta.selectionStart;
+    ta.value=ta.value.substring(0,pos)+text+ta.value.substring(ta.selectionEnd);
+    ta.focus();ta.selectionStart=ta.selectionEnd=pos+text.length;
+    if(document.getElementById('editPreview')&&typeof marked!=='undefined'&&marked.parse)
+      document.getElementById('editPreview').innerHTML=marked.parse(ta.value);
+  }
+}
+
+var cmEditor=null;
+
+function editFromView(){
+  var iframeSrc=document.getElementById('viewFrame').src;
+  // 只允许编辑 /articles/ 下的 .html 文件
+  var m=iframeSrc.match(/\/articles\/([^?#]+\.html)/i);
+  if(!m){
+    var title=document.getElementById('viewTitle').textContent;
+    if(title==='工作中心'||title==='今日任务'||title==='提醒事项')
+      alert('当前页面是任务面板，无可编辑的文件');
+    else
+      alert('当前页面不是可编辑的文件');
+    return;
+  }
+  currentFile=decodeURIComponent(m[1]);
+  document.getElementById('editTitle').textContent=document.getElementById('viewTitle').textContent;
+  fetch('/api/read?path='+encodeURIComponent(currentFile)).then(function(r){return r.json()}).then(function(data){
+    var md=data.markdown||'';
+    // 实时预览
+    var preview=document.getElementById('editPreview');
+    if(typeof marked!=='undefined'&&marked.parse){preview.innerHTML=marked.parse(md)}
+    else{preview.innerHTML='<div class="empty-state"><p>预览加载中...</p></div>'}
+    // 初始化 CodeMirror 编辑器
+    var parent=document.getElementById('cmEditor');
+    parent.innerHTML='';
+    if(typeof CodeMirrorEditor!=='undefined'){
+      cmEditor=CodeMirrorEditor.createEditor(parent,md,function(val){
+        if(typeof marked!=='undefined'&&marked.parse)
+          document.getElementById('editPreview').innerHTML=marked.parse(val);
+      });
+    }
+    showMode('modeEdit');
+    // 非 CodeMirror 回退：用 textarea
+    if(!cmEditor){
+      var ta=document.createElement('textarea');
+      ta.id='editTextarea';
+      ta.style.cssText='flex:1;border:none;padding:12px;font-family:monospace;font-size:13px;line-height:1.6;resize:none;outline:none';
+      ta.value=md;
+      ta.onkeyup=function(){
+        if(typeof marked!=='undefined'&&marked.parse)
+          document.getElementById('editPreview').innerHTML=marked.parse(this.value);
+      };
+      parent.parentNode.insertBefore(ta,parent.nextSibling);
+    }
+  }).catch(function(e){console.error('读取失败:',e);alert('读取失败')})
+}
+
+function backToView(){
+  if(confirm('放弃编辑？')){
+    if(cmEditor){cmEditor.destroy();cmEditor=null;}
+    showMode('modeView');
+  }
+}
+
+function saveEdit(){
+  var markdown;
+  if(cmEditor){markdown=CodeMirrorEditor.getContent(cmEditor);}
+  else{markdown=document.getElementById('editTextarea').value;}
+  fetch('/api/save',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path:currentFile,markdown:markdown})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.success){
+      if(cmEditor){cmEditor.destroy();cmEditor=null;}
+      showMode('modeView');viewFile(currentFile,currentFile);
+    }
+    else alert('保存失败: '+(data.error||'未知错误'));
+  }).catch(function(e){console.error('保存失败:',e);alert('保存失败')})
+}
+
+// ── 新建文件 ──
+function newFile(){document.getElementById('newFileName').value='';var m=new bootstrap.Modal(document.getElementById('newFileModal'));m.show()}
+function doNewFile(){
+  var name=document.getElementById('newFileName').value.trim();
+  if(!name){alert('请输入文件名');return}
+  fetch('/api/create-file',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,dir:currentDir})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){bootstrap.Modal.getInstance(document.getElementById('newFileModal')).hide();loadDir(currentDir)}
+    else alert('创建失败: '+(d.error||''));
+  }).catch(function(e){console.error('创建文件失败:',e);alert('创建失败')})
+}
+
+// ── 新建文件夹 ──
+function newFolder(){document.getElementById('newFolderName').value='';var m=new bootstrap.Modal(document.getElementById('newFolderModal'));m.show()}
+function doNewFolder(){
+  var name=document.getElementById('newFolderName').value.trim();
+  if(!name){alert('请输入文件夹名称');return}
+  fetch('/api/create-dir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,dir:currentDir})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){bootstrap.Modal.getInstance(document.getElementById('newFolderModal')).hide();loadDir(currentDir);loadDirs()}
+    else alert('创建失败: '+(d.error||''));
+  }).catch(function(e){console.error('创建目录失败:',e);alert('创建失败')})
+}
+
+// ── 重命名 ──
+function renameItem(name,path,isDir){
+  renameTarget={name:name,path:path,isDir:isDir};
+  document.getElementById('renameInput').value=name;
+  new bootstrap.Modal(document.getElementById('renameModal')).show();
+}
+function doRename(){
+  var newName=document.getElementById('renameInput').value.trim();
+  if(!newName){alert('请输入新名称');return}
+  fetch('/api/rename',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:renameTarget.path,newName:newName})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){bootstrap.Modal.getInstance(document.getElementById('renameModal')).hide();loadDir(currentDir);loadDirs()}
+    else alert('重命名失败: '+(d.error||''));
+  }).catch(function(e){console.error('重命名失败:',e);alert('重命名失败')})
+}
+
+// ── 删除 ──
+function deleteItem(name,path,isDir){
+  deleteTarget={name:name,path:path,isDir:isDir};
+  document.getElementById('deleteMsg').textContent='确定要删除'+(isDir?'文件夹':'文件')+'「'+name+'」吗？';
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+function doDelete(){
+  fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:deleteTarget.path,isDir:deleteTarget.isDir})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();loadDir(currentDir);loadDirs()}
+    else alert('删除失败: '+(d.error||''));
+  }).catch(function(e){console.error('删除失败:',e);alert('删除失败')})
+}
+
+// ── 上传 ──
+function uploadFile(){document.getElementById('uploadInput').value='';new bootstrap.Modal(document.getElementById('uploadModal')).show()}
+function doUpload(){
+  var input=document.getElementById('uploadInput');
+  if(!input.files||input.files.length===0){alert('请选择文件');return}
+  var files=[];
+  var names=[];
+  for(var i=0;i<input.files.length;i++){
+    var name=input.files[i].name;
+    if(!name.endsWith('.html')&&!name.endsWith('.md')){
+      alert('只允许上传 HTML 文件（.html/.md）\n非法文件: '+name);
+      return;
+    }
+    names.push(name);
+  }
+  var loaded=0;
+  for(var i=0;i<input.files.length;i++){
+    (function(file){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        files.push({name:file.name,content:e.target.result});
+        loaded++;
+        if(loaded===input.files.length)sendUpload(files);
+      };
+      reader.readAsText(file);
+    })(input.files[i]);
+  }
+}
+function sendUpload(files){
+  fetch('/api/upload',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({files:files,dir:currentDir})
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.success){bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();loadDir(currentDir)}
+    else alert('上传失败: '+(d.error||''));
+  }).catch(function(e){console.error('上传失败:',e);alert('上传失败')})
+}
+
+
+// ── 撤销/重做 ──
+var editHistory=[];
+var editHistoryIdx=-1;
+var editHistoryMax=100;
+var editIgnoreChange=false;
+
+function initEditHistory(){
+  editHistory=[];
+  editHistoryIdx=-1;
+  var ta=document.getElementById("editTextarea");
+  if(ta)saveEditState();
+}
+
+function saveEditState(){
+  var ta=document.getElementById("editTextarea");
+  if(!ta)return;
+  var val=ta.value;
+  // 如果当前状态和最后一个相同，不重复记录
+  if(editHistory.length>0&&editHistory[editHistory.length-1]===val)return;
+  // 删除当前位置之后的历史
+  if(editHistoryIdx<editHistory.length-1)editHistory=editHistory.slice(0,editHistoryIdx+1);
+  editHistory.push(val);
+  if(editHistory.length>editHistoryMax)editHistory.shift();
+  editHistoryIdx=editHistory.length-1;
+}
+
+function undoEdit(){
+  if(cmEditor){CodeMirrorEditor.undoEdit(cmEditor);}
+}
+
+function redoEdit(){
+  if(cmEditor){CodeMirrorEditor.redoEdit(cmEditor);}
+}
+
+// ── 初始化 ──
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('headerDate').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  loadDirs();
+  loadDir('');
+  // 检查 ?view= 参数
+  var p=new URLSearchParams(location.search);
+  var view=p.get('view');
+  if(view){var pn=pageTitle[view];if(pn){document.getElementById('viewFrame').src=pageMap[view];document.getElementById('viewTitle').textContent=pn;showMode('modeView')}else viewFile(view,view)}
+  else{openPage('renwu')}
+});
+</script>
+
+<!-- Modal: 移动到 -->
+<div class="modal fade" id="moveModal" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header"><h5 class="modal-title">移动到</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+  <p id="moveMsg">选择目标文件夹：</p>
+  <div id="moveDirTree" style="max-height:300px;overflow-y:auto;border:1px solid #dee2e6;border-radius:4px;padding:8px;"></div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" onclick="doMove()" id="moveBtn" disabled>移动</button>
+  <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+</div>
+</div></div></div>
+
+
+<script>
+// ── 移动到 ──
+var moveItemName="",moveItemPath="",moveTargetDir="";
+function moveItem(name,path){
+  moveItemName=name;moveItemPath=path;moveTargetDir='';
+  var el=document.getElementById("moveDirTree");
+  el.innerHTML="<div style='padding:8px;color:#999;'>加载中...</div>";
+  fetch("/api/dirs").then(function(r){return r.json()}).then(function(dirs){
+    el.innerHTML="";
+    var rootEl=document.createElement("div");
+    rootEl.className="dir-item";rootEl.dataset.path="";
+    rootEl.innerHTML='<i class="bi bi-folder"></i> /';
+    rootEl.onclick=function(){
+      document.querySelectorAll("#moveDirTree .dir-item").forEach(function(x){x.classList.remove("selected")});
+      this.classList.add("selected");
+      moveTargetDir="";
+      document.getElementById("moveBtn").disabled=false;
+    };
+    el.appendChild(rootEl);
+    (function build(parent,items){
+      items.forEach(function(d){
+        if(d.type!=="dir")return;
+        var div=document.createElement("div");
+        div.className="dir-item";div.dataset.path=d.path;
+        div.innerHTML='<i class="bi bi-folder"></i> '+d.name;
+        div.onclick=function(){
+          document.querySelectorAll("#moveDirTree .dir-item").forEach(function(x){x.classList.remove("selected")});
+          this.classList.add("selected");
+          moveTargetDir=d.path;
+          document.getElementById("moveBtn").disabled=false;
+        };
+        parent.appendChild(div);
+        if(d.children&&d.children.length){
+          var cd=document.createElement('div');
+          cd.style.marginLeft='20px';
+          build(cd,d.children);
+          parent.appendChild(cd);
+        }
+      });
+    })(el,dirs);
+  });
+  new bootstrap.Modal(document.getElementById("moveModal")).show();
+}
+function doMove(){
+  if(!moveItemPath)return;
+  document.getElementById("moveBtn").disabled=true;
+  document.getElementById("moveBtn").textContent="移动中...";
+  fetch("/api/move",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:moveItemPath,targetDir:moveTargetDir})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      bootstrap.Modal.getInstance(document.getElementById("moveModal")).hide();
+      loadDir(currentDir);loadDirs();
+    }else alert("移动失败: "+(d.error||""));
+  }).catch(function(e){console.error("移动失败:",e);alert("移动失败")})
+  .finally(function(){document.getElementById("moveBtn").disabled=false;document.getElementById("moveBtn").textContent="移动";});
+}
+</script>
+
+<script>
+
+// ── 快捷键 ──
+document.addEventListener("keydown", function(e) {
+  // Ctrl+S 保存
+  if ((e.ctrlKey||e.metaKey) && e.key === "s") {
+    e.preventDefault();
+    if (document.getElementById("modeEdit").classList.contains("active")) saveEdit();
+  }
+  // Ctrl+F 搜索
+  if ((e.ctrlKey||e.metaKey) && e.key === "f") {
+    e.preventDefault();
+    var sb = document.getElementById("searchBox");
+    if (sb) { sb.focus(); sb.select(); }
+  }
+  // Ctrl+E 编辑
+  if ((e.ctrlKey||e.metaKey) && e.key === "e") {
+    e.preventDefault();
+    if (document.getElementById("modeView").classList.contains("active") && document.getElementById("viewEditBtn").style.display !== "none")
+      editFromView();
+  }
+});
+
+// ── 自动保存 ──
+var autoSaveTimer = null;
+function startAutoSave() {
+  stopAutoSave();
+  autoSaveTimer = setInterval(function() {
+    if (document.getElementById("modeEdit").classList.contains("active")) {
+      console.log("[AutoSave] 自动保存...");
+      saveEdit();
+    }
+  }, 120000); // 2分钟
+}
+function stopAutoSave() {
+  if (autoSaveTimer) { clearInterval(autoSaveTimer); autoSaveTimer = null; }
+}
+
+// ── 最近打开列表 ──
+var RECENT_KEY = "liruibiji_recent";
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch(e) { return []; }
+}
+function addRecent(path, title) {
+  var list = getRecent().filter(function(x) { return x.path !== path; });
+  list.unshift({ path: path, title: title || path, time: Date.now() });
+  if (list.length > 20) list = list.slice(0, 20);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch(e) {}
+  renderRecent();
+}
+function renderRecent() {
+  var el = document.getElementById("recentList");
+  if (!el) return;
+  var list = getRecent().slice(0, 10);
+  el.innerHTML = list.length ? "" : '<div class="recent-item" style="cursor:default;color:#ccc;">暂无记录</div>';
+  list.forEach(function(item) {
+    var d = document.createElement("div");
+    d.className = "recent-item";
+    d.innerHTML = '<i class="bi bi-clock-history"></i> ' + esc(item.title);
+    d.onclick = function() { viewFile(item.title, item.path); };
+    el.appendChild(d);
+  });
+}
+
+// ── 批量操作 ──
+var selectedFiles = [];
+function toggleFileSelect(path, checked) {
+  if (checked) { if (selectedFiles.indexOf(path) < 0) selectedFiles.push(path); }
+  else { var idx = selectedFiles.indexOf(path); if (idx >= 0) selectedFiles.splice(idx, 1); }
+  document.getElementById("batchBar").classList.toggle("show", selectedFiles.length > 0);
+  document.getElementById("batchCount").textContent = selectedFiles.length + " 项";
+}
+function batchDelete() {
+  if (selectedFiles.length === 0) return;
+  if (!confirm("确定删除选中的 " + selectedFiles.length + " 项？")) return;
+  var done = 0;
+  selectedFiles.forEach(function(p) {
+    fetch("/api/delete", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:p})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success) done++;
+      if(done === selectedFiles.length) { selectedFiles = []; loadDir(currentDir); loadDirs(); document.getElementById("batchBar").classList.remove("show"); }
+    });
+  });
+}
+function batchMove() {
+  if (selectedFiles.length === 0) return;
+  // Reuse move dialog for batch
+  var names = selectedFiles.map(function(p) { return p.split("/").pop(); });
+  moveItem(names[0], selectedFiles[0], selectedFiles);
+}
+
+// ── 拖拽移动 ──
+var dragFile = null;
+function initDrag() {
+  document.addEventListener("dragstart", function(e) {
+    var row = e.target.closest(".file-row");
+    if (row && row.dataset && row.dataset.path) {
+      dragFile = row.dataset.path;
+      e.dataTransfer.effectAllowed = "move";
+      row.classList.add("dragging");
+    }
+  });
+  document.addEventListener("dragend", function(e) {
+    document.querySelectorAll(".file-row.dragging").forEach(function(x) { x.classList.remove("dragging"); });
+    document.querySelectorAll(".dir-item.drag-over").forEach(function(x) { x.classList.remove("drag-over"); });
+  });
+  document.addEventListener("dragover", function(e) {
+    var dir = e.target.closest(".dir-item");
+    if (dir) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; dir.classList.add("drag-over"); }
+  });
+  document.addEventListener("dragleave", function(e) {
+    var dir = e.target.closest(".dir-item");
+    if (dir) dir.classList.remove("drag-over");
+  });
+  document.addEventListener("drop", function(e) {
+    var dir = e.target.closest(".dir-item");
+    if (dir && dragFile) {
+      e.preventDefault();
+      dir.classList.remove("drag-over");
+      var targetPath = dir.dataset.path || "";
+      fetch("/api/move", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:dragFile,targetDir:targetPath})})
+      .then(function(r){return r.json()}).then(function(d){
+        if(d.success) { loadDir(currentDir); loadDirs(); }
+        else alert("移动失败: "+(d.error||""));
+      });
+      dragFile = null;
+    }
+  });
+}
+
+// ── 右键菜单 ──
+var contextMenu = null;
+function showContextMenu(e, path, isDir) {
+  e.preventDefault();
+  hideContextMenu();
+  contextMenu = document.createElement("div");
+  contextMenu.className = "context-menu";
+  contextMenu.style.left = e.clientX + "px";
+  contextMenu.style.top = e.clientY + "px";
+  var items = [];
+  if (isDir) {
+    items.push({ icon: "bi-file-plus", text: "新建文件", action: function() { currentDir = path; newFile(); } });
+    items.push({ icon: "bi-folder-plus", text: "新建文件夹", action: function() { currentDir = path; newFolder(); } });
+    items.push({ icon: "bi-pencil", text: "重命名", action: function() { renameItem(path.split("/").pop(), path, true); } });
+    items.push({ icon: "bi-trash", text: "删除", danger: true, action: function() { deleteItem(path.split("/").pop(), path, true); } });
+  } else {
+    items.push({ icon: "bi-pencil", text: "重命名", action: function() { renameItem(path.split("/").pop(), path, false); } });
+    items.push({ icon: "bi-arrow-right", text: "移动到", action: function() { moveItem(path.split("/").pop(), path); } });
+    items.push({ icon: "bi-trash", text: "删除", danger: true, action: function() { deleteItem(path.split("/").pop(), path, false); } });
+  }
+  items.forEach(function(item) {
+    var div = document.createElement("div");
+    div.className = "context-menu-item" + (item.danger ? " danger" : "");
+    div.innerHTML = '<i class="bi ' + item.icon + '"></i> ' + item.text;
+    div.onclick = function() { hideContextMenu(); item.action(); };
+    contextMenu.appendChild(div);
+  });
+  document.body.appendChild(contextMenu);
+  // Adjust if off-screen
+  var rect = contextMenu.getBoundingClientRect();
+  if (rect.right > window.innerWidth) contextMenu.style.left = (window.innerWidth - rect.width - 10) + "px";
+  if (rect.bottom > window.innerHeight) contextMenu.style.top = (window.innerHeight - rect.height - 10) + "px";
+}
+function hideContextMenu() {
+  if (contextMenu) { contextMenu.remove(); contextMenu = null; }
+}
+document.addEventListener("click", hideContextMenu);
+document.addEventListener("scroll", hideContextMenu, true);
+
+// ── Wiki 引用链接解析 ──
+function parseWikiLinks(html) {
+  return html.replace(/\[\[([^\]]+)\]\]/g, function(m, name) {
+    var filePath = name.trim() + ".html";
+    // Check if file exists
+    var exists = false;
+    var allFiles = document.querySelectorAll("#fileTable .file-name");
+    for (var i = 0; i < allFiles.length; i++) {
+      if (allFiles[i].textContent.trim() === name.trim() + ".html" || allFiles[i].textContent.trim() === name.trim()) {
+        exists = true; break;
+      }
+    }
+    var cls = exists ? "wiki-link" : "wiki-link missing";
+    return "<a class=\"" + cls + "\" href=\"javascript:void(0)\" onclick=\"event.stopPropagation();viewFile('" + escAttr(name.trim()) + "','" + escAttr(filePath) + "')\">" + name.trim() + "</a>";
+  });
+}
+
+// Hook into marked parse
+var origMarkedParse = null;
+if (typeof marked !== "undefined" && marked.parse) {
+  origMarkedParse = marked.parse;
+  marked.parse = function(src, opts) {
+    var html = origMarkedParse(src, opts);
+    return parseWikiLinks(html);
+  };
+}
+
+</script>
+<script>
+
+// ── 暗色模式 ──
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
+  try { localStorage.setItem("liruibiji_dark", document.body.classList.contains("dark") ? "1" : "0"); } catch(e) {}
+}
+// 恢复暗色模式状态
+try { if (localStorage.getItem("liruibiji_dark") === "1") document.body.classList.add("dark"); } catch(e) {}
+
+</script>
+
+<script>
+// 页面加载完成后初始化
+(function() {
+  renderRecent();
+  initDrag();
+  // viewFile already tracks recent from the file row onclick
+  // Patch editFromView to start auto-save
+  var origEdit = window.editFromView;
+  if (origEdit) {
+    window.editFromView = function() {
+      startAutoSave();
+      return origEdit.apply(this, arguments);
+    };
+  }
+  // Patch backToView to stop auto-save
+  var origBack = window.backToView || window.cancelEdit;
+  if (origBack) {
+    window.backToView = function() {
+      stopAutoSave();
+      return origBack.apply(this, arguments);
+    };
+  }
+  
+  // Add right-click on dir tree items
+  document.getElementById("dirTree").addEventListener("contextmenu", function(e) {
+    var dir = e.target.closest(".dir-item");
+    if (dir) {
+      var path = dir.dataset.path;
+      var isDir = true;
+      showContextMenu(e, path, isDir);
+    }
+  });
+})();
+</script>
+
+</body>
