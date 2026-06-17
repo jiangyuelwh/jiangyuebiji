@@ -3,6 +3,21 @@ import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { undo, redo } from "@codemirror/commands";
 
+function extraInputCompatibility() {
+  return EditorView.domEventHandlers({
+    compositionend(event, view) {
+      try {
+        if (view && view.dom) {
+          setTimeout(() => {
+            if (typeof oncompositionend === 'undefined') return;
+          }, 0);
+        }
+      } catch (e) {}
+      return false;
+    }
+  });
+}
+
 export function createEditor(parent, content, onUpdate) {
   const state = EditorState.create({
     doc: content,
@@ -10,6 +25,13 @@ export function createEditor(parent, content, onUpdate) {
       basicSetup,
       EditorView.lineWrapping,
       markdown(),
+      EditorView.contentAttributes.of({
+        autocapitalize: 'off',
+        autocomplete: 'off',
+        autocorrect: 'off',
+        spellcheck: 'false'
+      }),
+      extraInputCompatibility(),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && onUpdate) onUpdate(update.state.doc.toString());
       }),

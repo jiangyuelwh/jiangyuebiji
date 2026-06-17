@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>笔记网站各种信息呈现方式示例</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  body.view-font-lg .markdown-body{font-size:20px;line-height:2}
+  body.view-font-sm .markdown-body{font-size:17px;line-height:1.85}
+  .view-actions{position:fixed;top:14px;right:14px;z-index:1200;display:flex;gap:8px;align-items:center}
+  .view-font-btn{height:38px;min-width:38px;padding:0 12px;border:1px solid rgba(208,215,222,.95);background:rgba(255,255,255,.86);border-radius:10px;cursor:pointer;font-size:18px;font-weight:700;color:#0f172a;box-shadow:0 2px 10px rgba(0,0,0,.08);backdrop-filter:blur(6px)}
+  .view-font-btn:hover{background:#fff;border-color:#bfd3ea}
+  .article-spacer{height:1.4em;flex:0 0 auto}
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; font-size:18px; line-height:1.9; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; width:auto; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .view-actions{top:10px;right:10px}.view-font-btn{height:36px;min-width:36px;padding:0 10px;font-size:17px}.markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<div class="view-actions"><button type="button" class="view-font-btn" id="fontMinusBtn" aria-label="字体变小" title="字体变小">A-</button><button type="button" class="view-font-btn" id="fontPlusBtn" aria-label="字体变大" title="字体变大">A+</button></div>
+<article class="markdown-body"><div class="article-spacer" aria-hidden="true"></div><h1>除了文件标题，你还可以设置一个标题</h1>
+<hr>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 这是普通的待办事项<br>他会显示再工作中心其他事项里 没打勾代表没完成</li>
+</ul>
+<hr>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 这是今日任务📅 2026-06-17<!-- 每日任务 --><br>注意他后面加了代码，渲染后你看不见。我的工作中心和AI靠这个标签识别他。打勾代表已完成。今日任务可以手动添加模板任务，如果你有接入AI，可以让他每天给你添加。</li>
+</ul>
+<pre><code>今日任务📅 2026-06-17%% 每日任务 %%
+</code></pre>
+<hr>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 这是提醒事项 📅 2026-06-15 ～00:58<!-- 提醒事项 --><br>除了标签还有时间。AI可以靠这个标签和时间知道什么时候该给你发提醒信息</li>
+</ul>
+<pre><code>提醒事项 📅 2026-06-15 ～00:58%% 提醒事项 %%
+</code></pre>
+<hr>
+<h1>一级标题</h1>
+<h2>二级标题</h2>
+<h3>三级标题</h3>
+<hr>
+<ul>
+<li>无序列表事项1</li>
+<li>无序列表事项2</li>
+<li>无序列表事项3</li>
+<li>无需列表事项4</li>
+</ul>
+<hr>
+<ol>
+<li>有序列表事项1</li>
+<li>有序列表事项</li>
+<li>有序列表事项</li>
+</ol>
+<blockquote>
+<p>这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块</p>
+</blockquote>
+<pre><code>这是一个代码块
+function saveNote(title, content) {
+  return { title, content, saved: true };
+}
+</code></pre>
+<p><figure class="md-asset-image"><img src="https://n.sinaimg.cn/default/1_img/upload/bc3aab81/107/w1024h683/20260617/cb61-6f51de06ab7d9db11bc407cb4ae41d2c.jpg" alt="油价图线上的"><figcaption>油价图线上的</figcaption></figure></p>
+<hr>
+<p><a href="https://photo.sina.com.cn/" target="_blank" rel="noopener noreferrer">这是一个外部链接点击链接新浪网</a></p>
+<hr>
+<p><a href="文章收录/世界杯比赛用球是需要充电的，望周知.html">世界杯比赛用球是需要充电的，望周知</a></p>
+<p><a href="AI技术学习/照片文件整理.html">这是一个内部链接点击进入一篇笔记底部点击再回来</a></p>
+<p><a href="AI技术学习/开源AI知识库MaxKB.html">开源AI知识库MaxKB</a><br><a href="AI技术学习/开源AI知识库MaxKB.html">开源AI知识库MaxKB</a><br><a href="文章收录/国务院办公厅关于加强监管防范风险促进私募投资基金高质量发展的指导意见_证券_中国政府网.html">国务院办公厅关于加强监管防范风险促进私募投资基金高质量发展的指导意见_证券_中国政府网</a></p>
+<hr>
+<p>这是上传的图片<br><figure class="md-asset-image"><img src="/fujian/%E7%AC%94%E8%AE%B0%E7%BD%91%E7%AB%99%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/a007-iixnuaa0642312_1781701426045.jpg" alt="a007-iixnuaa0642312.jpg"><figcaption>a007-iixnuaa0642312.jpg</figcaption></figure></p>
+<hr>
+<p>这是上传的一份文件<br><a class="md-asset-link" href="/fujian/%E7%AC%94%E8%AE%B0%E7%BD%91%E7%AB%99%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/README_1781701473454.md" target="_blank" rel="noopener noreferrer"><span class="md-asset-icon">📎</span><span class="md-asset-name">README.md</span></a></p>
+<hr>
+<p>当然还有表格，但是表格你可以用AI做更漂亮</p>
+<table>
+<thead>
+<tr>
+<th>形式</th>
+<th>适合记录什么</th>
+<th>优点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>段落</td>
+<td>说明、总结</td>
+<td>自然完整</td>
+</tr>
+<tr>
+<td>清单</td>
+<td>要点、结论</td>
+<td>扫描快</td>
+</tr>
+<tr>
+<td>步骤</td>
+<td>流程、操作</td>
+<td>顺序清楚</td>
+</tr>
+<tr>
+<td>任务</td>
+<td>执行事项</td>
+<td>可追踪</td>
+</tr>
+<tr>
+<td>表格</td>
+<td>对比信息</td>
+<td>结构直观</td>
+</tr>
+</tbody></table>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");var plus=document.getElementById("fontPlusBtn");var minus=document.getElementById("fontMinusBtn");var key="liruibiji_view_font";if(plus&&minus){function applyFont(mode){document.body.classList.remove("view-font-sm","view-font-lg");if(mode==="lg")document.body.classList.add("view-font-lg");else if(mode==="sm")document.body.classList.add("view-font-sm");try{localStorage.setItem(key,mode||"md")}catch(e){}}try{applyFont(localStorage.getItem(key)||"md")}catch(e){}plus.addEventListener("click",function(){if(document.body.classList.contains("view-font-sm"))applyFont("md");else applyFont("lg")});minus.addEventListener("click",function(){if(document.body.classList.contains("view-font-lg"))applyFont("md");else applyFont("sm")})}if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+# 除了文件标题，你还可以设置一个标题
+
+
+---
+
+- [x] 这是普通的待办事项
+  他会显示再工作中心其他事项里 没打勾代表没完成
+---
+
+- [x] 这是今日任务📅 2026-06-17%%每日任务%%
+  注意他后面加了代码，渲染后你看不见。我的工作中心和AI靠这个标签识别他。打勾代表已完成。今日任务可以手动添加模板任务，如果你有接入AI，可以让他每天给你添加。
+
+```
+今日任务📅 2026-06-17%% 每日任务 %%
+```
+
+---
+
+- [x] 这是提醒事项 📅 2026-06-15 ～00:58%%提醒事项%%
+  除了标签还有时间。AI可以靠这个标签和时间知道什么时候该给你发提醒信息
+
+```
+提醒事项 📅 2026-06-15 ～00:58%% 提醒事项 %%
+```
+---
+# 一级标题
+
+## 二级标题
+
+### 三级标题
+
+
+---
+- 无序列表事项1
+- 无序列表事项2
+- 无序列表事项3
+- 无需列表事项4
+- ---
+
+1. 有序列表事项1
+2. 有序列表事项
+3. 有序列表事项
+
+
+
+
+
+> 这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块这是一个引用块
+
+
+
+```
+这是一个代码块
+function saveNote(title, content) {
+  return { title, content, saved: true };
+}
+```
+
+
+
+
+
+
+
+![油价图线上的](https://n.sinaimg.cn/default/1_img/upload/bc3aab81/107/w1024h683/20260617/cb61-6f51de06ab7d9db11bc407cb4ae41d2c.jpg)
+
+---
+
+
+[这是一个外部链接点击链接新浪网](https://photo.sina.com.cn/)
+
+
+---
+[世界杯比赛用球是需要充电的，望周知](文章收录/世界杯比赛用球是需要充电的，望周知.html)
+
+[这是一个内部链接点击进入一篇笔记底部点击再回来](AI技术学习/照片文件整理.html)
+
+[开源AI知识库MaxKB](AI技术学习/开源AI知识库MaxKB.html)
+[开源AI知识库MaxKB](AI技术学习/开源AI知识库MaxKB.html)
+[国务院办公厅关于加强监管防范风险促进私募投资基金高质量发展的指导意见_证券_中国政府网](文章收录/国务院办公厅关于加强监管防范风险促进私募投资基金高质量发展的指导意见_证券_中国政府网.html)
+
+
+
+---
+
+
+这是上传的图片
+![a007-iixnuaa0642312.jpg](/fujian/%E7%AC%94%E8%AE%B0%E7%BD%91%E7%AB%99%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/a007-iixnuaa0642312_1781701426045.jpg)
+
+
+---
+
+这是上传的一份文件
+[README.md](/fujian/%E7%AC%94%E8%AE%B0%E7%BD%91%E7%AB%99%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/README_1781701473454.md)
+
+
+---
+当然还有表格，但是表格你可以用AI做更漂亮
+
+| 形式 | 适合记录什么 | 优点 |
+|---|---|---|
+| 段落 | 说明、总结 | 自然完整 |
+| 清单 | 要点、结论 | 扫描快 |
+| 步骤 | 流程、操作 | 顺序清楚 |
+| 任务 | 执行事项 | 可追踪 |
+| 表格 | 对比信息 | 结构直观 |
+/source-md-->

@@ -7,6 +7,7 @@
 <link href="/static/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/static/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/static/index.css">
+<link rel="stylesheet" href="/static/toastui-editor.css">
 </head>
 <body>
 
@@ -81,7 +82,7 @@
       <div class="view-bar">
         <button class="btn btn-outline-secondary btn-sm" onclick="backToList()"><i class="bi bi-arrow-left"></i> <span>返回</span></button>
         <span class="view-title" id="viewTitle">-</span>
-        <button class="btn btn-outline-primary btn-sm" id="viewEditBtn" onclick="editFromView()"><i class="bi bi-pencil"></i> <span>编辑</span></button>
+        <button class="btn btn-primary btn-sm edit-save-btn" id="viewEditBtn" onclick="editFromView()"><i class="bi bi-pencil"></i> <span>编辑</span></button>
       </div>
       <div class="view-content" id="viewContent"><iframe id="viewFrame"></iframe></div>
     </div>
@@ -128,6 +129,9 @@
           <div id="cmEditor"></div>
         </div>
         <div class="edit-preview" id="editPreviewWrap">
+          <div class="edit-preview-topbar">
+            <button type="button" class="btn btn-outline-secondary btn-sm edit-preview-close-top" onclick="closeMobilePreview()"><i class="bi bi-x-lg"></i> <span>关闭预览</span></button>
+          </div>
           <div class="edit-preview-body" id="editPreview"></div>
           <div class="edit-preview-bottombar">
             <button type="button" class="btn btn-primary btn-sm edit-preview-close-bottom" onclick="closeMobilePreview()"><i class="bi bi-x-lg"></i> <span>关闭预览</span></button>
@@ -170,7 +174,7 @@
 
 <script src="/static/bootstrap.bundle.min.js"></script>
 <script src="/static/marked.min.js"></script>
-<script src="/static/codemirror-bundle.js"></script>
+<script src="/static/toastui-editor.bundle.js"></script>
 <script src="/static/index-main.js"></script>
 
 <!-- Modal: 移动到 -->

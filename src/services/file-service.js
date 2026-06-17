@@ -72,16 +72,76 @@ function scanTree(dirPath = ARTICLES_DIR) {
   if (cached && dirPath === ARTICLES_DIR) return cached;
 
   let entries = [];
-  try { entries = fs.readdirSync(dirPath, { withFileTypes: true }); } catch { return []; }
+  try { entries = fs.readdirSync(dirPath, { withFileTypes: true }); } catch { return dirPath === ARTICLES_DIR ? { dirs: [], rootFiles: [] } : []; }
 
-  const tree = entries.filter((e) => !e.name.startsWith('.') && e.isDirectory() && !(dirPath === ARTICLES_DIR && e.name === '任务管理')).map((entry) => {
-    const fullPath = path.join(dirPath, entry.name);
-    const relPath = path.relative(ARTICLES_DIR, fullPath).replace(/\\/g, '/');
-    const sub = fs.readdirSync(fullPath); const hasFiles = sub.some(function(e){return !e.startsWith('.') && !fs.statSync(path.join(fullPath,e)).isDirectory()}); return { type: 'dir', name: entry.name, path: relPath, children: scanTree(fullPath), hasFiles: hasFiles };
-  });
+  const dirs = entries
+    .filter((e) => !e.name.startsWith('.') && e.isDirectory() && !(dirPath === ARTICLES_DIR && e.name === '任务管理'))
+    .map((entry) => {
+      const fullPath = path.join(dirPath, entry.name);
+      const relPath = path.relative(ARTICLES_DIR, fullPath).replace(/\\/g, '/');
+      let sub = [];
+      try { sub = fs.readdirSync(fullPath, { withFileTypes: true }); } catch {}
+      const files = sub
+        .filter((e) => (
+          !e.name.startsWith('.')
+          && e.isFile()
+          && /\.html$/i.test(e.name)
+          && e.name !== 'renwu.html'
+          && e.name !== 'system_pages'
+        ))
+        .map((e) => {
+          const fileFullPath = path.join(fullPath, e.name);
+          const fileRelPath = path.relative(ARTICLES_DIR, fileFullPath).replace(/\\/g, '/');
+          let mtime = 0;
+          try { mtime = fs.statSync(fileFullPath).mtimeMs || 0; } catch {}
+          return {
+            type: 'file',
+            name: e.name,
+            title: e.name.replace(/\.html$/i, ''),
+            path: fileRelPath,
+            mtime,
+          };
+        })
+        .sort((a, b) => String(a.title || a.name).localeCompare(String(b.title || b.name), 'zh-CN'));
+      return {
+        type: 'dir',
+        name: entry.name,
+        path: relPath,
+        children: scanTree(fullPath),
+        hasFiles: files.length > 0,
+        files,
+      };
+    });
 
-  if (dirPath === ARTICLES_DIR) dirCache.set('tree', tree);
-  return tree;
+  if (dirPath === ARTICLES_DIR) {
+    const rootFiles = entries
+      .filter((e) => (
+        !e.name.startsWith('.')
+        && e.isFile()
+        && /\.html$/i.test(e.name)
+        && e.name !== 'renwu.html'
+        && e.name !== 'system_pages'
+      ))
+      .map((e) => {
+        const fileFullPath = path.join(dirPath, e.name);
+        const fileRelPath = path.relative(ARTICLES_DIR, fileFullPath).replace(/\\/g, '/');
+        let mtime = 0;
+        try { mtime = fs.statSync(fileFullPath).mtimeMs || 0; } catch {}
+        return {
+          type: 'file',
+          name: e.name,
+          title: e.name.replace(/\.html$/i, ''),
+          path: fileRelPath,
+          mtime,
+        };
+      })
+      .sort((a, b) => String(a.title || a.name).localeCompare(String(b.title || b.name), 'zh-CN'));
+    const payload = { dirs, rootFiles };
+    dirCache.set('tree', payload);
+    return payload;
+  }
+
+  return dirs;
 }
 
 function listDir(relDir = '') {
@@ -323,6 +383,37 @@ function renderMarkdownFile(relPath) {
   return { html };
 }
 
+function renderArticleHtml(relPath) {
+  if (!relPath) { const err = new Error('缺少 path'); err.statusCode = 400; throw err; }
+  const normalized = String(relPath || '').replace(/\\/g, '/');
+  const filePath = path.resolve(ARTICLES_DIR, normalized);
+  assertSafe(filePath);
+  if (!fs.existsSync(filePath)) { const err = new Error('文件不存在'); err.statusCode = 404; throw err; }
+  let html = fs.readFileSync(filePath, 'utf-8');
+  html = ensureSourceMd(html);
+  const markdown = extractSourceMd(html);
+  const title = path.basename(normalized, '.html');
+  const bodyHtml = mdParse(markdown, { breaks: true, gfm: true });
+  let chromeHtml = '';
+  try {
+    const m = html.match(/<article class="markdown-body">([\s\S]*?)<h1>/);
+    if (
+      m &&
+      !normalized.includes('每日任务模板') &&
+      !normalized.includes('今日任务') &&
+      (m[1].includes('addTaskBtn') || m[1].includes('addRemBtn') || m[1].includes('addTaskModal') || m[1].includes('addRemModal') || m[1].includes('openTemplateBtn') || m[1].includes('openTodayBtn'))
+    ) {
+      chromeHtml = m[1];
+    }
+  } catch {}
+  if (!chromeHtml) {
+    if (normalized.includes("今日任务")) chromeHtml = TODAY_CHROME;
+    else if (normalized.includes("提醒事项")) chromeHtml = REMINDER_CHROME;
+    else if (normalized.includes("每日任务模板")) chromeHtml = TEMPLATE_CHROME;
+  }
+  return buildHtml(title, bodyHtml, markdown, chromeHtml, normalized);
+}
+
 function scanWikiLinkIssues() {
   return analyzeWikiLinks(extractSourceMd);
 }
@@ -403,4 +494,5 @@ module.exports = {
   repairWikiLinkIssues,
   scanUnusedAssets,
   cleanupUnusedAssets,
+  renderArticleHtml,
 };

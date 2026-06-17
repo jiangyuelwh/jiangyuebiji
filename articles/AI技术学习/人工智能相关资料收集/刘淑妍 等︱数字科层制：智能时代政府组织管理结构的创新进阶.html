@@ -7,7 +7,13 @@
 <link rel="stylesheet" href="/static/github-markdown.min.css">
 <style>
   body { margin:0; background:#fff; }
-  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  body.view-font-lg .markdown-body{font-size:20px;line-height:2}
+  body.view-font-sm .markdown-body{font-size:17px;line-height:1.85}
+  .view-actions{position:fixed;top:14px;right:14px;z-index:1200;display:flex;gap:8px;align-items:center}
+  .view-font-btn{height:38px;min-width:38px;padding:0 12px;border:1px solid rgba(208,215,222,.95);background:rgba(255,255,255,.86);border-radius:10px;cursor:pointer;font-size:18px;font-weight:700;color:#0f172a;box-shadow:0 2px 10px rgba(0,0,0,.08);backdrop-filter:blur(6px)}
+  .view-font-btn:hover{background:#fff;border-color:#bfd3ea}
+  .article-spacer{height:1.4em;flex:0 0 auto}
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; font-size:18px; line-height:1.9; }
   .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
   .wiki-link:hover { border-bottom-style:solid; }
   .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
@@ -15,7 +21,7 @@
   .md-asset-icon { font-size:16px; }
   .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .md-asset-image { margin:12px 0; }
-  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image img { max-width:100%; width:auto; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
   .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
   .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
   .markdown-body code { word-break:break-word; }
@@ -26,12 +32,13 @@
   .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
   .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
   .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
-  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+  @media (max-width:767px) { .view-actions{top:10px;right:10px}.view-font-btn{height:36px;min-width:36px;padding:0 10px;font-size:17px}.markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
 </style>
 </head>
 <body>
-<article class="markdown-body"><hr>
-<h2>title: &quot;刘淑妍 等︱数字科层制：智能时代政府组织管理结构的创新进阶&quot;<br>source: &quot;<a href="https://mp.weixin.qq.com/s/XPvp-AZ7J2tcO2ulR5PCXw">https://mp.weixin.qq.com/s/XPvp-AZ7J2tcO2ulR5PCXw</a>&quot;<br>author:<br>  - &quot;<a class="wiki-link" href="javascript:void(0)" onclick="_openWikiLink('AI技术学习/人工智能相关资料收集/编辑部.html','编辑部')">编辑部</a>&quot;<br>published:<br>created: 2026-05-08<br>description: &quot;随着信息技术的发展，传统科层组织不断演变与进阶。&quot;<br>tags:<br>  - &quot;clippings&quot;</h2>
+<div class="view-actions"><button type="button" class="view-font-btn" id="fontMinusBtn" aria-label="字体变小" title="字体变小">A-</button><button type="button" class="view-font-btn" id="fontPlusBtn" aria-label="字体变大" title="字体变大">A+</button></div>
+<article class="markdown-body"><div class="article-spacer" aria-hidden="true"></div><hr>
+<h2>title: &quot;刘淑妍 等︱数字科层制：智能时代政府组织管理结构的创新进阶&quot;<br>source: &quot;<a href="https://mp.weixin.qq.com/s/XPvp-AZ7J2tcO2ulR5PCXw" target="_blank" rel="noopener noreferrer">https://mp.weixin.qq.com/s/XPvp-AZ7J2tcO2ulR5PCXw</a>&quot;<br>author:<br>  - &quot;<a class="wiki-link" href="javascript:void(0)" onclick="_openWikiLink('AI技术学习/人工智能相关资料收集/编辑部.html','编辑部')">编辑部</a>&quot;<br>published:<br>created: 2026-05-08<br>description: &quot;随着信息技术的发展，传统科层组织不断演变与进阶。&quot;<br>tags:<br>  - &quot;clippings&quot;</h2>
 <p>编辑部 <em>2025年4月17日 11:00</em></p>
 <p><strong>提要</strong></p>
 <p>随着信息技术的发展，传统科层组织不断演变与进阶。这一组织社会学现象引发了数字时代的新思考，即韦伯定义的科层制在数字时代发生了怎样的适应性变化？本文以技术发展作为关键变量，集中梳理了科层制演进的历史逻辑，探讨了数字革命与政府组织结构关系调整新取向，建构起新技术影响下的政府组织管理模式再造的新解释内涵——数字科层制。文章进一步以当前上海数字化转型治理实践为考察对象，重点描绘和分析了数字科层制如何重塑政府信息流程、业务流程和组织流程，着重回答了“数字科层制为何能如此运作并发挥作用”这一关键议题，为新时代数字政府的组织创新提供新启发。</p>
@@ -109,7 +116,7 @@
 </article>
 <div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
 
-<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");var plus=document.getElementById("fontPlusBtn");var minus=document.getElementById("fontMinusBtn");var key="liruibiji_view_font";if(plus&&minus){function applyFont(mode){document.body.classList.remove("view-font-sm","view-font-lg");if(mode==="lg")document.body.classList.add("view-font-lg");else if(mode==="sm")document.body.classList.add("view-font-sm");try{localStorage.setItem(key,mode||"md")}catch(e){}}try{applyFont(localStorage.getItem(key)||"md")}catch(e){}plus.addEventListener("click",function(){if(document.body.classList.contains("view-font-sm"))applyFont("md");else applyFont("lg")});minus.addEventListener("click",function(){if(document.body.classList.contains("view-font-lg"))applyFont("md");else applyFont("sm")})}if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
 </body>
 </html>
 <!--source-md

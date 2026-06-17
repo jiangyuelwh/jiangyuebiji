@@ -9,7 +9,7 @@ let playwright = null;
 try { playwright = require('playwright'); } catch {}
 
 const { ARTICLES_DIR, FUJIAN_DIR, SNAPSHOTS_DIR } = require('../config');
-const { mdParse, buildHtml } = require('./markdown-service');
+const { mdParse, buildHtml, normalizeExternalLinksInMarkdown } = require('./markdown-service');
 const { rebuildAllArticles } = require('./file-service');
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0 Safari/537.36';
@@ -293,6 +293,7 @@ function uniqueArticleRel(dir, title) {
 async function previewClip(url) {
   if (!url) throw new Error('缺少 URL');
   const { fetched, meta } = await extractBest(url);
+  const markdown = normalizeExternalLinksInMarkdown(meta.contentMarkdown || '');
   return {
     success: true,
     url: fetched.finalUrl,
@@ -300,7 +301,7 @@ async function previewClip(url) {
     siteName: meta.siteName || '',
     author: meta.author || '',
     publishedAt: meta.publishedAt || '',
-    markdown: meta.contentMarkdown,
+    markdown,
     contentHtml: meta.contentHtml || '',
     contentType: fetched.contentType || '',
   };
@@ -308,13 +309,14 @@ async function previewClip(url) {
 
 async function saveClip({ url, dir = '' }) {
   const { fetched, meta, rendered } = await extractBest(url);
+  const normalizedMarkdown = normalizeExternalLinksInMarkdown(meta.contentMarkdown || '');
   const preview = {
     url: fetched.finalUrl,
     title: sanitizeName(meta.title) || '未命名文章',
     siteName: meta.siteName || '',
     author: meta.author || '',
     publishedAt: meta.publishedAt || '',
-    markdown: meta.contentMarkdown,
+    markdown: normalizedMarkdown,
     contentType: fetched.contentType || '',
   };
   const relPath = uniqueArticleRel(dir, preview.title);

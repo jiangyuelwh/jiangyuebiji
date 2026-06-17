@@ -49,6 +49,15 @@ function extractWikiLinks(mdText, currentRelPath) {
     const rel = resolveWikiTarget(m[1], currentRelPath);
     if (rel) out.push(rel);
   }
+  const mdLinkRe = /\[[^\]]*\]\(([^)\s]+\.html(?:#[^)]+)?)(?:\s+"[^"]*")?\)/gi;
+  while ((m = mdLinkRe.exec(String(mdText || "")))) {
+    const rawHref = String(m[1] || '').replace(/#.*$/, '');
+    if (!rawHref) continue;
+    if (/^(https?:)?\/\//i.test(rawHref)) continue;
+    if (/^\/fujian\//i.test(rawHref)) continue;
+    const rel = resolveWikiTarget(rawHref, currentRelPath);
+    if (rel) out.push(rel);
+  }
   return [...new Set(out)];
 }
 

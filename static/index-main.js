@@ -446,14 +446,28 @@ function loadDirs(parent,path){
 }
 
 function renderDirTree(el,nodes,activePath,isRoot){
-  if(isRoot) el.innerHTML='<div class="dir-item'+(activePath===''?' active':'')+'" data-path="" onclick="loadDir(\'\')"><i class="bi bi-folder"></i><span class="name">根目录</span></div>';
-  else el.innerHTML='';
+  var targetEl=el;
+  if(isRoot){
+    el.innerHTML='<div class="dir-item'+(activePath===''?' active':'')+'" data-path="" onclick="loadDir(\'\')"><i class="bi bi-folder"></i><span class="name">根目录</span></div>';
+    var rootWrap=document.createElement('div');
+    rootWrap.className='dir-children open root-dir-children';
+    el.appendChild(rootWrap);
+    targetEl=rootWrap;
+  }else el.innerHTML='';
   var items=Array.isArray(nodes)?nodes:(nodes&&nodes.dirs?nodes.dirs:[]);
   items.forEach(function(d){
     var div=document.createElement('div');
     div.className='dir-item'+(activePath===d.path?' active':'');
     div.dataset.path=d.path;
-    var hasSub=(d.children&&d.children.length>0);var arrowIcon=hasSub?'▶':'▷';var arrowCls='arrow'+(d._open?' expanded':'')+(hasSub?'':' no-child');div.innerHTML='<span class="'+arrowCls+'">'+arrowIcon+'</span><i class="bi '+(d.hasFiles?'bi-folder-fill':'bi-folder')+'"></i><span class="name">'+esc(d.name)+'</span>';
+    var hasSub=(d.children&&d.children.length>0);
+    var hasFile=(d.files&&d.files.length>0);
+    var expandable=hasSub||hasFile;
+    var hasActiveChildDir=!!(activePath && d.path && activePath.indexOf(d.path + '/')===0);
+    var hasActiveFile=!!(activePath && (d.files||[]).some(function(f){ return f.path===activePath; }));
+    var shouldOpen=!!(d._open || hasActiveChildDir || hasActiveFile);
+    var arrowIcon=expandable?'▶':'▷';
+    var arrowCls='arrow'+(shouldOpen?' expanded':'')+(expandable?'':' no-child');
+    div.innerHTML='<span class="'+arrowCls+'">'+arrowIcon+'</span><i class="bi '+(d.hasFiles?'bi-folder-fill':'bi-folder')+'"></i><span class="name">'+esc(d.name)+'</span>';
     div.onclick=function(e){
       if(e.target.classList.contains('arrow')){
         if(e.target.classList.contains('no-child'))return;
@@ -466,14 +480,43 @@ function renderDirTree(el,nodes,activePath,isRoot){
         loadDir(d.path);
       }
     };
-    el.appendChild(div);
-    if(d.children&&d.children.length){
+    targetEl.appendChild(div);
+    if(expandable){
       var childDiv=document.createElement('div');
-      childDiv.className='dir-children'+(d._open?' open':'');
-      renderDirTree(childDiv,{dirs:d.children},activePath);
-      el.appendChild(childDiv);
+      childDiv.className='dir-children'+(shouldOpen?' open':'');
+      if(d.children&&d.children.length){
+        renderDirTree(childDiv,{dirs:d.children},activePath);
+      }
+      (d.files||[]).forEach(function(f){
+        var fileDiv=document.createElement('div');
+        fileDiv.className='dir-item tree-file-item'+(activePath===f.path?' active':'');
+        fileDiv.dataset.path=f.path;
+        fileDiv.innerHTML='<span class="arrow no-child">&gt;</span><i class="bi bi-file-earmark-text"></i><span class="name">'+esc((f.title||f.name||'').replace(/\.html$/i,''))+'</span>';
+        fileDiv.onclick=function(e){
+          e.stopPropagation();
+          viewFile((f.title||f.name||'').replace(/\.html$/i,''),f.path);
+        };
+        childDiv.appendChild(fileDiv);
+      });
+      targetEl.appendChild(childDiv);
     }
   });
+  if(isRoot){
+    var rootFiles=(nodes&&nodes.rootFiles)||[];
+    if(rootFiles.length){
+      rootFiles.forEach(function(f){
+        var fileDiv=document.createElement('div');
+        fileDiv.className='dir-item tree-file-item'+(activePath===f.path?' active':'');
+        fileDiv.dataset.path=f.path;
+        fileDiv.innerHTML='<span class="arrow no-child">&gt;</span><i class="bi bi-file-earmark-text"></i><span class="name">'+esc((f.title||f.name||'').replace(/\.html$/i,''))+'</span>';
+        fileDiv.onclick=function(e){
+          e.stopPropagation();
+          viewFile((f.title||f.name||'').replace(/\.html$/i,''),f.path);
+        };
+        targetEl.appendChild(fileDiv);
+      });
+    }
+  }
 }
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -716,325 +759,324 @@ function backToList(){
 }
 
 // ── 编辑文件 ──
+
+
+function isLinePrefixAction(before, after){
+  return !after && /^(# |## |### |- |1\. |- \[ \] |> )$/.test(before || '');
+}
+
+function applyLinePrefixToText(value, start, end, prefix){
+  var from = start;
+  var to = end;
+  while(from > 0 && value[from-1] !== '\n') from--;
+  while(to < value.length && value[to] !== '\n') to++;
+  var block = value.slice(from, to);
+  var lines = block.split('\n');
+  var allHave = lines.every(function(line){ return line.indexOf(prefix) === 0; });
+  var next = lines.map(function(line){
+    if(!line) return allHave ? line : prefix;
+    return allHave ? (line.indexOf(prefix) === 0 ? line.slice(prefix.length) : line) : prefix + line;
+  }).join('\n');
+  return {
+    value: value.slice(0, from) + next + value.slice(to),
+    start: from,
+    end: from + next.length
+  };
+}
+
+function getEditorInstance(){
+  return window.toastEditor || null;
+}
+
+function getEditorMarkdown(){
+  var editor=getEditorInstance();
+  return editor ? String(editor.getMarkdown() || '') : '';
+}
+
+function getEditorSelectionRange(){
+  var editor=getEditorInstance();
+  if(!editor) return [[1,1],[1,1]];
+  var sel=editor.getSelection();
+  if(Array.isArray(sel) && Array.isArray(sel[0])) return [sel[0], sel[1] || sel[0]];
+  return [[1,1],[1,1]];
+}
+
+function normalizeMdPos(pos){
+  if(Array.isArray(pos)) return [Math.max(1, pos[0]||1), Math.max(1, pos[1]||1)];
+  return [1,1];
+}
+
+function compareMdPos(a,b){
+  var pa=normalizeMdPos(a);
+  var pb=normalizeMdPos(b);
+  if(pa[0]!==pb[0]) return pa[0]-pb[0];
+  return pa[1]-pb[1];
+}
+
+function getOrderedEditorSelectionRange(){
+  var range=getEditorSelectionRange();
+  return compareMdPos(range[0], range[1])<=0 ? range : [range[1], range[0]];
+}
+
+function isCollapsedMdRange(range){
+  var ordered=range||getOrderedEditorSelectionRange();
+  return compareMdPos(ordered[0], ordered[1])===0;
+}
+
+function mdPosToOffset(value, pos){
+  pos = normalizeMdPos(pos);
+  var line = pos[0], ch = pos[1];
+  var lines = String(value||'').split('\n');
+  var offset = 0;
+  for(var i=1;i<line && i<=lines.length;i++) offset += lines[i-1].length + 1;
+  var current = lines[Math.max(0, Math.min(lines.length-1, line-1))] || '';
+  offset += Math.max(0, Math.min(current.length, ch-1));
+  return offset;
+}
+
+function offsetToMdPos(value, offset){
+  var src = String(value||'');
+  var safe = Math.max(0, Math.min(src.length, offset||0));
+  var lines = src.slice(0, safe).split('\n');
+  var line = lines.length;
+  var ch = (lines[lines.length-1] || '').length + 1;
+  return [line, ch];
+}
+
+function setEditorSelectionRange(start,end){
+  var editor=getEditorInstance();
+  if(!editor) return;
+  editor.setSelection(normalizeMdPos(start), normalizeMdPos(typeof end!=='undefined' ? end : start));
+}
+
+function focusEditor(){
+  var editor=getEditorInstance();
+  if(!editor) return;
+  var host=document.getElementById('cmEditor');
+  var active=document.activeElement;
+  if(host && active && (host===active || host.contains(active))) return;
+  editor.focus();
+}
+
+function refreshEditPreview(){
+  var preview=document.getElementById('editPreview');
+  if(!preview) return;
+  var titleInput=document.getElementById('editDocTitle');
+  preview.innerHTML=renderEditPreview((titleInput&&titleInput.value)||'', getEditorMarkdown());
+}
+
+function createTuiEditor(markdown){
+  destroyEditor();
+  var host=document.getElementById('cmEditor');
+  if(!host) return null;
+  host.innerHTML='';
+  if(!(window.toastui && window.toastui.Editor)){
+    host.innerHTML='<div style="padding:16px;color:#d93025">编辑器加载失败</div>';
+    return null;
+  }
+  var editor=new window.toastui.Editor({
+    el: host,
+    height: '100%',
+    minHeight: '0px',
+    initialEditType: 'markdown',
+    previewStyle: 'tab',
+    initialValue: String(markdown || ''),
+    hideModeSwitch: true,
+    usageStatistics: false,
+    autofocus: false,
+    toolbarItems: []
+  });
+  editor.changeMode('markdown', true);
+  editor.on('change', function(){
+    refreshEditPreview();
+  });
+  bindToastEditorKeyboard(editor);
+  bindToastEditorPaste(editor);
+  window.toastEditor=editor;
+  refreshEditPreview();
+  return editor;
+}
+
+function destroyEditor(){
+  if(window.toastEditor && typeof window.toastEditor.destroy==='function'){
+    try{ window.toastEditor.destroy(); }catch(e){}
+  }
+  window.toastEditor=null;
+  var host=document.getElementById('cmEditor');
+  if(host) host.innerHTML='';
+}
+
+function getLineBoundaryOffsets(value, startOffset, endOffset){
+  var src=String(value||'');
+  var from=Math.max(0, Math.min(src.length, startOffset||0));
+  var to=Math.max(0, Math.min(src.length, typeof endOffset==='number' ? endOffset : from));
+  while(from > 0 && src[from-1] !== '\n') from--;
+  while(to < src.length && src[to] !== '\n') to++;
+  return {start:from,end:to};
+}
+
+function handleContinuePrefix(line){
+  var src=String(line||'');
+  var taskMatch=src.match(/^(\s*-\s+\[(?: |x|X)\]\s+)(.*)$/);
+  if(taskMatch) return taskMatch[2].trim() ? taskMatch[1].replace(/\[[xX]\]/,'[ ]') : '';
+  var bulletMatch=src.match(/^(\s*[-*+]\s+)(.*)$/);
+  if(bulletMatch) return bulletMatch[2].trim() ? bulletMatch[1] : '';
+  var orderedMatch=src.match(/^(\s*)(\d+)\.\s+(.*)$/);
+  if(orderedMatch) return orderedMatch[3].trim() ? (orderedMatch[1] + (Number(orderedMatch[2]||'1') + 1) + '. ') : '';
+  var quoteMatch=src.match(/^(\s*>\s?)(.*)$/);
+  if(quoteMatch) return quoteMatch[2].trim() ? quoteMatch[1] : '';
+  return null;
+}
+
+function getPrefixFamily(prefix){
+  if(/^#{1,6} $/.test(prefix||'')) return 'heading';
+  if(prefix==='- ') return 'bullet';
+  if(prefix==='1. ') return 'ordered';
+  if(prefix==='- [ ] ') return 'task';
+  if(prefix==='> ') return 'quote';
+  return '';
+}
+
+function stripLinePrefixByFamily(line, family){
+  if(!line) return line;
+  if(family==='heading') return line.replace(/^#{1,6}\s+/, '');
+  if(family==='bullet') return line.replace(/^[-*+]\s+/, '');
+  if(family==='ordered') return line.replace(/^\d+\.\s+/, '');
+  if(family==='task') return line.replace(/^-\s+\[(?: |x|X)\]\s+/, '');
+  if(family==='quote') return line.replace(/^>\s?/, '');
+  return line;
+}
+
+function transformPrefixedLine(line, prefix, shouldRemove){
+  if(!line) return shouldRemove ? '' : prefix;
+  if(shouldRemove && line.indexOf(prefix)===0) return line.slice(prefix.length);
+  var family=getPrefixFamily(prefix);
+  var cleaned=family ? stripLinePrefixByFamily(line, family) : line;
+  return shouldRemove ? cleaned : prefix + cleaned;
+}
+
+function handleEditorContinueEnter(ev){
+  var editor=getEditorInstance();
+  if(!editor) return;
+  var sel=getOrderedEditorSelectionRange();
+  if(!isCollapsedMdRange(sel)) return;
+  var value=getEditorMarkdown();
+  var startPos=sel[0];
+  var startOffset=mdPosToOffset(value, startPos);
+  var bounds=getLineBoundaryOffsets(value, startOffset, startOffset);
+  var lineStart=bounds.start;
+  var lineEnd=bounds.end;
+  var line=value.slice(lineStart,lineEnd);
+  var prefix=handleContinuePrefix(line);
+  if(prefix===null) return false;
+  if(ev && ev.preventDefault) ev.preventDefault();
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(ev && ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+  var insert='\n'+prefix;
+  editor.replaceSelection(insert, startPos, startPos);
+  var nextValue=getEditorMarkdown();
+  setEditorSelectionRange(offsetToMdPos(nextValue, startOffset+insert.length));
+  refreshEditPreview();
+  focusEditor();
+  return true;
+}
+
+function applyEditorLinePrefix(prefix){
+  var editor=getEditorInstance();
+  if(!editor) return false;
+  var range=getOrderedEditorSelectionRange();
+  var value=getEditorMarkdown();
+  var start=mdPosToOffset(value, range[0]);
+  var end=mdPosToOffset(value, range[1]);
+  var bounds=getLineBoundaryOffsets(value, start, end);
+  var block=value.slice(bounds.start, bounds.end);
+  var lines=block.split('\n');
+  var allHave=lines.length>0 && lines.every(function(line){ return line.indexOf(prefix)===0; });
+  var nextBlock=lines.map(function(line){
+    return transformPrefixedLine(line, prefix, allHave);
+  }).join('\n');
+  editor.replaceSelection(nextBlock, offsetToMdPos(value, bounds.start), offsetToMdPos(value, bounds.end));
+  var nextValue=getEditorMarkdown();
+  setEditorSelectionRange(offsetToMdPos(nextValue, bounds.start), offsetToMdPos(nextValue, bounds.start+nextBlock.length));
+  refreshEditPreview();
+  focusEditor();
+  return true;
+}
+
 function wrapMd(before,after){
-  if(cmEditor){
-    cmEditor.focus();
-    var sel=cmEditor.state.selection.main;
-    var text=cmEditor.state.doc.sliceString(sel.from,sel.to);
-    cmEditor.dispatch({
-      changes:{from:sel.from,to:sel.to,insert:before+text+after},
-      selection:{anchor:sel.from+before.length,head:sel.from+before.length+text.length}
-    });
+  if(isLinePrefixAction(before, after) && applyEditorLinePrefix(before)) return;
+  var editor=getEditorInstance();
+  if(!editor) return;
+  var range=getOrderedEditorSelectionRange();
+  var originalValue=getEditorMarkdown();
+  var startOffset=mdPosToOffset(originalValue, range[0]);
+  var selected=editor.getSelectedText(range[0], range[1]) || '';
+  var inserted=before + selected + after;
+  editor.replaceSelection(inserted, range[0], range[1]);
+  var value=getEditorMarkdown();
+  if(selected){
+    setEditorSelectionRange(offsetToMdPos(value, startOffset + before.length), offsetToMdPos(value, startOffset + before.length + selected.length));
   }else{
-    var ta=document.getElementById('editTextarea');
-    if(!ta)return;
-    var start=ta.selectionStart,end=ta.selectionEnd;
-    var selected=ta.value.substring(start,end);
-    ta.value=ta.value.substring(0,start)+before+selected+after+ta.value.substring(end);
-    ta.focus();ta.selectionStart=start+before.length;ta.selectionEnd=start+before.length+selected.length;
-    if(document.getElementById('editPreview')&&typeof marked!=='undefined'&&marked.parse)
-      document.getElementById('editPreview').innerHTML=marked.parse(ta.value);
+    setEditorSelectionRange(offsetToMdPos(value, startOffset + before.length));
   }
+  focusEditor();
+  refreshEditPreview();
 }
+
 function insertMd(text){
-  if(cmEditor){
-    cmEditor.focus();
-    var sel=cmEditor.state.selection.main;
-    cmEditor.dispatch({
-      changes:{from:sel.from,to:sel.to,insert:text},
-      selection:{anchor:sel.from+text.length}
-    });
-  }else{
-    var ta=document.getElementById('editTextarea');
-    if(!ta)return;
-    var pos=ta.selectionStart;
-    ta.value=ta.value.substring(0,pos)+text+ta.value.substring(ta.selectionEnd);
-    ta.focus();ta.selectionStart=ta.selectionEnd=pos+text.length;
-    if(document.getElementById('editPreview')&&typeof marked!=='undefined'&&marked.parse)
-      document.getElementById('editPreview').innerHTML=marked.parse(ta.value);
-  }
+  var editor=getEditorInstance();
+  if(!editor) return;
+  var range=getOrderedEditorSelectionRange();
+  var startOffset=mdPosToOffset(getEditorMarkdown(), range[0]);
+  editor.replaceSelection(text, range[0], range[1]);
+  var value=getEditorMarkdown();
+  setEditorSelectionRange(offsetToMdPos(value, startOffset + text.length));
+  focusEditor();
+  refreshEditPreview();
 }
 
+function setEditorMarkdown(markdown){
+  var editor=getEditorInstance();
+  if(!editor) return;
+  editor.setMarkdown(String(markdown||''), false);
+  refreshEditPreview();
+}
 
-function ensureImageDialog(){
-  if(document.getElementById('imageInsertOverlay')) return;
-  var overlay=document.createElement('div');
-  overlay.id='imageInsertOverlay';
-  overlay.className='app-overlay';
-  overlay.innerHTML=''
-    + '<div class="app-dialog" style="max-width:460px">'
-    +   '<div class="app-dialog-head">'
-    +     '<div class="app-dialog-title">插入图片</div>'
-    +     '<button id="imageInsertClose" class="app-dialog-close">×</button>'
-    +   '</div>'
-    +   '<div class="app-field">'
-    +     '<div>'
-    +       '<div class="app-label">图片地址</div>'
-    +       '<input id="imageInsertUrl" type="text" placeholder="https://example.com/image.png" class="app-input">'
-    +     '</div>'
-    +     '<div>'
-    +       '<div class="app-label">说明文字（可选）</div>'
-    +       '<input id="imageInsertAlt" type="text" placeholder="图片说明" class="app-input">'
-    +     '</div>'
-    +   '</div>'
-    +   '<div class="app-actions">'
-    +     '<button id="imageInsertCancel" class="app-btn">取消</button>'
-    +     '<button id="imageInsertConfirm" class="app-btn app-btn-primary">插入</button>'
-    +   '</div>'
-    + '</div>';
-  document.body.appendChild(overlay);
-  function closeDialog(){ overlay.style.display='none'; }
-  document.getElementById('imageInsertClose').onclick=closeDialog;
-  document.getElementById('imageInsertCancel').onclick=closeDialog;
-  overlay.onclick=function(e){ if(e.target===overlay) closeDialog(); };
-  document.getElementById('imageInsertConfirm').onclick=function(){
-    var url=document.getElementById('imageInsertUrl').value.trim();
-    var alt=document.getElementById('imageInsertAlt').value.trim();
-    if(!url){ alert('请输入图片地址'); return; }
-    insertMd('![' + alt + '](' + url + ')');
-    closeDialog();
+function bindTitlePreview(){
+  var titleInput=document.getElementById('editDocTitle');
+  if(!titleInput) return;
+  titleInput.oninput=function(){
+    refreshEditPreview();
   };
 }
 
-
-function ensureLinkDialog(){
-  if(document.getElementById('linkInsertOverlay')) return;
-  var overlay=document.createElement('div');
-  overlay.id='linkInsertOverlay';
-  overlay.className='app-overlay';
-  overlay.innerHTML=''
-    + '<div class="app-dialog" style="max-width:460px">'
-    +   '<div class="app-dialog-head">'
-    +     '<div class="app-dialog-title">插入链接</div>'
-    +     '<button id="linkInsertClose" class="app-dialog-close">×</button>'
-    +   '</div>'
-    +   '<div class="app-field" style="overflow:hidden">'
-    +     '<div>'
-    +       '<div class="app-label">链接地址</div>'
-    +       '<input id="linkInsertUrl" type="text" placeholder="https://example.com" class="app-input">'
-    +     '</div>'
-    +     '<div>'
-    +       '<div class="app-label">显示文字（可选）</div>'
-    +       '<input id="linkInsertText" type="text" placeholder="链接文字" class="app-input">'
-    +     '</div>'
-    +   '</div>'
-    +   '<div class="app-actions" style="padding-top:12px;border-top:1px solid #f0f0f0">'
-    +     '<button id="linkInsertCancel" class="app-btn">取消</button>'
-    +     '<button id="linkInsertConfirm" class="app-btn app-btn-primary">插入</button>'
-    +   '</div>'
-    + '</div>';
-  document.body.appendChild(overlay);
-  function closeDialog(){ overlay.style.display='none'; }
-  document.getElementById('linkInsertClose').onclick=closeDialog;
-  document.getElementById('linkInsertCancel').onclick=closeDialog;
-  overlay.onclick=function(e){ if(e.target===overlay) closeDialog(); };
-  document.getElementById('linkInsertConfirm').onclick=function(){
-    var url=document.getElementById('linkInsertUrl').value.trim();
-    var text=document.getElementById('linkInsertText').value.trim();
-    if(!url){ alert('请输入链接地址'); return; }
-    insertMd('[' + (text || url) + '](' + url + ')');
-    closeDialog();
-  };
-}
-
-function openLinkDialog(){
-  ensureLinkDialog();
-  var overlay=document.getElementById('linkInsertOverlay');
-  document.getElementById('linkInsertUrl').value='';
-  document.getElementById('linkInsertText').value='';
-  overlay.style.display='flex';
-  setTimeout(function(){ document.getElementById('linkInsertUrl').focus(); }, 30);
-}
-
-
-function ensureInternalLinkDialog(){
-  if(document.getElementById('internalLinkOverlay')) return;
-  var overlay=document.createElement('div');
-  overlay.id='internalLinkOverlay';
-  overlay.className='app-overlay';
-  overlay.innerHTML=''
-    + '<div class="app-dialog" style="width:100%;max-width:520px;max-height:calc(100vh - 84px);display:flex;flex-direction:column;overflow:hidden">'
-    +   '<div class="app-dialog-head">'
-    +     '<div class="app-dialog-title">插入内部链接</div>'
-    +     '<button id="internalLinkClose" class="app-dialog-close">×</button>'
-    +   '</div>'
-    +   '<div class="app-field" style="overflow:hidden">'
-    +     '<div>'
-    +       '<div class="app-label">搜索文件</div>'
-    +       '<input id="internalLinkSearch" type="text" placeholder="输入文件名筛选" class="app-input">'
-    +     '</div>'
-    +     '<div style="display:flex;flex-direction:column;min-height:0;flex:1">'
-    +       '<div class="app-label">选择文件</div>'
-    +       '<div id="internalLinkList" class="app-list"></div>'
-    +     '</div>'
-    +   '</div>'
-    +   '<div class="app-actions">'
-    +     '<button id="internalLinkCancel" class="app-btn">取消</button>'
-    +     '<button id="internalLinkConfirm" class="app-btn app-btn-primary" disabled>插入</button>'
-    +   '</div>'
-    + '</div>';
-  document.body.appendChild(overlay);
-
-  function closeDialog(){ overlay.style.display='none'; }
-  document.getElementById('internalLinkClose').onclick=closeDialog;
-  document.getElementById('internalLinkCancel').onclick=closeDialog;
-  overlay.onclick=function(e){ if(e.target===overlay) closeDialog(); };
-}
-
-function renderInternalLinkList(files, keyword){
-  var list=document.getElementById('internalLinkList');
-  var confirmBtn=document.getElementById('internalLinkConfirm');
-  if(!list) return;
-  list.innerHTML='';
-  confirmBtn.disabled=true;
-  window._internalLinkSelected='';
-
-  var filtered=(files||[]).filter(function(f){
-    if(!f || f.isDir) return false;
-    var name=(f.name||'').replace(/.html$/i,'');
-    if(!keyword) return true;
-    return name.toLowerCase().includes(keyword.toLowerCase()) || (f.path||'').toLowerCase().includes(keyword.toLowerCase());
-  });
-
-  if(!filtered.length){
-    list.innerHTML='<div style="padding:14px;color:#999;font-size:13px;text-align:center">没有匹配文件</div>';
-    return;
+function openEditorWithContent(title, markdown){
+  var titleInput=document.getElementById('editDocTitle');
+  if(titleInput) titleInput.value=title||'';
+  document.getElementById('editTitle').textContent=title||'编辑文件';
+  showMode('modeEdit');
+  if(typeof window.startAutoSave==='function'){
+    try{ window.startAutoSave(); }catch(e){}
   }
-
-  filtered.forEach(function(f){
-    var baseName=(f.name||'').replace(/.html$/i,'');
-    var relPath=(typeof getRelativeArticlePath==='function' ? getRelativeArticlePath(currentFile||'', f.path||f.name||'') : (f.path||f.name||''));
-    relPath=String(relPath||'').replace(/.html$/i,'');
-    var item=document.createElement('div');
-    item.dataset.name=baseName;
-    item.dataset.rel=relPath;
-    item.className='app-list-item';
-    item.innerHTML='<div class="app-list-title">'+esc(baseName)+'</div><div class="app-list-path">'+esc(relPath)+' → '+esc(f.path||f.name||'')+'</div>';
-    item.onclick=function(){
-      Array.from(list.children).forEach(function(el){ el.classList.remove('active'); });
-      this.classList.add('active');
-      window._internalLinkSelected=this.dataset.rel || baseName;
-      confirmBtn.disabled=false;
-    };
-    list.appendChild(item);
-  });
-}
-
-function loadInternalLinkFiles(callback){
-  fetch('/api/list?dir=' + encodeURIComponent('')).then(function(r){return r.json()}).then(function(data){
-    var files=[];
-    function walkDir(dir, done){
-      fetch('/api/list?dir=' + encodeURIComponent(dir||'')).then(function(r){return r.json()}).then(function(d){
-        var entries=(d.files||[]);
-        var subdirs=entries.filter(function(x){return x.isDir;});
-        entries.filter(function(x){return !x.isDir && /.html$/i.test(x.name||'');}).forEach(function(x){ files.push(x); });
-        if(!subdirs.length){ done(); return; }
-        var left=subdirs.length;
-        subdirs.forEach(function(sd){ walkDir(sd.path,function(){ left--; if(left===0) done(); }); });
-      }).catch(function(){ done(); });
+  closeMobilePreview();
+  try{ window.scrollTo(0,0); }catch(e){}
+  bindTitlePreview();
+  createTuiEditor(markdown||'');
+  setTimeout(function(){
+    if(isNewFileMode){
+      if(titleInput) titleInput.focus();
+      var editor=getEditorInstance();
+      if(editor) editor.moveCursorToStart(false);
+    }else{
+      focusEditor();
+      var editor=getEditorInstance();
+      if(editor) editor.moveCursorToStart(true);
     }
-    walkDir('', function(){ callback(files); });
-  }).catch(function(){ callback([]); });
+  },30);
 }
-
-function openInternalLinkDialog(){
-  ensureInternalLinkDialog();
-  var overlay=document.getElementById('internalLinkOverlay');
-  var input=document.getElementById('internalLinkSearch');
-  var confirmBtn=document.getElementById('internalLinkConfirm');
-  overlay.style.display='flex';
-  input.value='';
-  confirmBtn.disabled=true;
-  window._internalLinkSelected='';
-  loadInternalLinkFiles(function(files){
-    window._internalLinkFiles=files||[];
-    renderInternalLinkList(window._internalLinkFiles,'');
-  });
-  input.oninput=function(){ renderInternalLinkList(window._internalLinkFiles||[], this.value.trim()); };
-  confirmBtn.onclick=function(){
-    if(!window._internalLinkSelected) return;
-    insertMd('[[' + window._internalLinkSelected + ']]');
-    overlay.style.display='none';
-  };
-  setTimeout(function(){ input.focus(); }, 30);
-}
-
-function openImageDialog(){
-  ensureImageDialog();
-  var overlay=document.getElementById('imageInsertOverlay');
-  document.getElementById('imageInsertUrl').value='';
-  document.getElementById('imageInsertAlt').value='';
-  overlay.style.display='flex';
-  setTimeout(function(){ document.getElementById('imageInsertUrl').focus(); }, 30);
-}
-
-function ensureAssetDialog(){
-  if(document.getElementById('assetInsertOverlay')) return;
-  var overlay=document.createElement('div');
-  overlay.id='assetInsertOverlay';
-  overlay.className='app-overlay';
-  overlay.innerHTML=''
-    + '<div class="app-dialog" style="max-width:520px">'
-    +   '<div class="app-dialog-head">'
-    +     '<div class="app-dialog-title">上传图片和附件</div>'
-    +     '<button id="assetInsertClose" class="app-dialog-close">×</button>'
-    +   '</div>'
-    +   '<div class="app-label" style="margin-bottom:8px">支持任意格式，大小不超过 5MB，会按当前文章或目录自动归档</div>'
-    +   '<input id="assetInsertFile" type="file" style="display:block;width:100%;margin-bottom:12px">'
-    +   '<div id="assetInsertInfo" style="font-size:12px;color:#666;margin-bottom:12px"></div>'
-    +   '<div class="app-actions">'
-    +     '<button id="assetInsertCancel" class="app-btn">取消</button>'
-    +     '<button id="assetInsertConfirm" class="app-btn app-btn-primary">上传并插入</button>'
-    +   '</div>'
-    + '</div>';
-  document.body.appendChild(overlay);
-  function closeDialog(){ overlay.style.display='none'; }
-  document.getElementById('assetInsertClose').onclick=closeDialog;
-  document.getElementById('assetInsertCancel').onclick=closeDialog;
-  overlay.onclick=function(e){ if(e.target===overlay) closeDialog(); };
-  document.getElementById('assetInsertFile').onchange=function(){
-    var f=this.files&&this.files[0];
-    document.getElementById('assetInsertInfo').textContent=f?('已选择：'+f.name+'（'+Math.round(f.size/1024)+' KB）'):'';
-  };
-  document.getElementById('assetInsertConfirm').onclick=async function(){
-    var input=document.getElementById('assetInsertFile');
-    var f=input.files&&input.files[0];
-    if(!f){ alert('请选择文件'); return; }
-    if(f.size>5*1024*1024){ alert('文件不能超过 5MB'); return; }
-    try{
-      var buf=await f.arrayBuffer();
-      var bytes=new Uint8Array(buf);
-      var binary='';
-      for(var i=0;i<bytes.length;i++) binary+=String.fromCharCode(bytes[i]);
-      var base64=btoa(binary);
-      var r=await fetch('/api/upload-asset',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name:f.name,contentBase64:base64,articlePath:currentFile||'',dir:currentDir||''})
-      });
-      var d=await r.json();
-      if(!d.success){ alert('上传失败: '+(d.error||'')); return; }
-      var displayName=d.originalName||f.name||d.name||'附件';
-      if(d.isImage) insertMd('!['+displayName+']('+d.url+')');
-      else insertMd('['+displayName+']('+d.url+')');
-      closeDialog();
-    }catch(e){ alert('上传失败: '+e.message); }
-  };
-}
-
-function openAssetDialog(){
-  ensureAssetDialog();
-  var overlay=document.getElementById('assetInsertOverlay');
-  document.getElementById('assetInsertFile').value='';
-  document.getElementById('assetInsertInfo').textContent='';
-  overlay.style.display='flex';
-}
-
-var cmEditor=null;
 
 function editFromView(){
   var iframeSrc=document.getElementById('viewFrame').src;
-  // 只允许编辑 /articles/ 下的 .html 文件
   var m=iframeSrc.match(/\/articles\/([^?#]+\.html)/i);
   var isSystemTask=false;
   if(!m){
@@ -1043,59 +1085,26 @@ function editFromView(){
   }
   if(!m){
     var title=document.getElementById('viewTitle').textContent;
-    if(title==='工作中心')
-      alert('当前页面是任务面板，无可编辑的文件');
-    else
-      alert('当前页面不是可编辑的文件');
+    if(title==='工作中心') alert('当前页面是任务面板，无可编辑的文件');
+    else alert('当前页面不是可编辑的文件');
     return;
   }
   currentFile=isSystemTask?('__system__/任务管理/'+decodeURIComponent(m[1])):decodeURIComponent(m[1]);
   isNewFileMode=false;
   pendingNewFilePath='';
-  document.getElementById('editTitle').textContent=document.getElementById('viewTitle').textContent;
   fetch('/api/read?path='+encodeURIComponent(currentFile)).then(function(r){return r.json()}).then(function(data){
     var md=data.markdown||'';
-    var titleInput=document.getElementById('editDocTitle');
-    if(titleInput) titleInput.value=((currentFile||'').split('/').pop()||'').replace(/\.html$/i,'');
-    // 实时预览
-    var preview=document.getElementById('editPreview');
-    if(typeof marked!=='undefined'&&marked.parse){preview.innerHTML=renderEditPreview((titleInput&&titleInput.value)||'',md)}
-    else{preview.innerHTML='<div class="empty-state"><p>预览加载中...</p></div>'}
-    // 初始化 CodeMirror 编辑器
-    var parent=document.getElementById('cmEditor');
-    parent.innerHTML='';
-    var oldTa=document.getElementById('editTextarea');
-    if(oldTa) oldTa.remove();
-    if(typeof CodeMirrorEditor!=='undefined'){
-      cmEditor=CodeMirrorEditor.createEditor(parent,md,function(val){
-        if(typeof marked!=='undefined'&&marked.parse)
-          document.getElementById('editPreview').innerHTML=renderEditPreview(document.getElementById('editDocTitle').value,val);
-      });
-    }
-    showMode('modeEdit');
-    closeMobilePreview();
-    try{ window.scrollTo(0,0); }catch(e){}
-    bindTitlePreview();
-    // 非 CodeMirror 回退：用 textarea
-    if(!cmEditor){
-      var ta=document.createElement('textarea');
-      ta.id='editTextarea';
-      ta.style.cssText='flex:1;border:none;padding:12px;font-family:monospace;font-size:13px;line-height:1.6;resize:none;outline:none';
-      ta.value=md;
-      ta.onkeyup=function(){
-        if(typeof marked!=='undefined'&&marked.parse)
-          document.getElementById('editPreview').innerHTML=renderEditPreview(document.getElementById('editDocTitle').value,this.value);
-      };
-      parent.parentNode.insertBefore(ta,parent.nextSibling);
-    }
+    var title=((currentFile||'').split('/').pop()||'').replace(/\.html$/i,'');
+    openEditorWithContent(title, md);
   }).catch(function(e){console.error('读取失败:',e);alert('读取失败')})
 }
 
 function backToView(){
   if(confirm('放弃编辑？')){
-    if(cmEditor){cmEditor.destroy();cmEditor=null;}
-    var oldTa=document.getElementById('editTextarea');
-    if(oldTa) oldTa.remove();
+    if(typeof window.stopAutoSave==='function'){
+      try{ window.stopAutoSave(); }catch(e){}
+    }
+    destroyEditor();
     closeMobilePreview();
     if(isNewFileMode){
       isNewFileMode=false;
@@ -1119,22 +1128,94 @@ function renderEditPreview(name, body){
   return header+content;
 }
 
-function bindTitlePreview(){
-  var titleInput=document.getElementById('editDocTitle');
-  if(!titleInput) return;
-  titleInput.oninput=function(){
-    var body=cmEditor?CodeMirrorEditor.getContent(cmEditor):(document.getElementById('editTextarea')?document.getElementById('editTextarea').value:'');
-    if(typeof marked!=='undefined'&&marked.parse)
-      document.getElementById('editPreview').innerHTML=renderEditPreview(this.value,body);
-  };
+async function uploadPastedImageFile(file){
+  if(!file) throw new Error('未找到图片');
+  if(file.size>5*1024*1024) throw new Error('图片不能超过 5MB');
+  var dataUrl = await new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(){ resolve(String(reader.result||'')); };
+    reader.onerror=function(){ reject(new Error('读取图片失败')); };
+    reader.readAsDataURL(file);
+  });
+  var size = await new Promise(function(resolve){
+    var img = new Image();
+    img.onload = function(){ resolve({ width: img.naturalWidth || 0, height: img.naturalHeight || 0 }); };
+    img.onerror = function(){ resolve({ width: 0, height: 0 }); };
+    img.src = dataUrl;
+  });
+  var base64 = dataUrl.split(',').pop() || '';
+  var ext=(file.name&&/\.[^.]+$/.test(file.name))?file.name.match(/\.[^.]+$/)[0]:((file.type||'image/png').split('/')[1] ? '.'+(file.type||'image/png').split('/')[1] : '.png');
+  var name=(file.name&&file.name.trim())?file.name:('pasted_'+Date.now()+ext);
+  var articlePath=currentFile || ((currentDir||'') ? (String(currentDir).replace(/\\/g,'/')+'/未命名文章.html') : '未命名文章.html');
+  var r=await fetch('/api/upload-asset',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ name:name, contentBase64:base64, articlePath:articlePath, dir:currentDir||'' })
+  });
+  var d=await r.json();
+  if(!d.success) throw new Error(d.error||'上传失败');
+  var alt = d.originalName || d.name || '图片';
+  if(size.width > 0 && size.height > 0){
+    return '\n\n<img src="'+d.url+'" alt="'+alt.replace(/"/g,'&quot;')+'" width="'+size.width+'" height="'+size.height+'">\n\n';
+  }
+  return '\n\n!['+alt+']('+d.url+')\n\n';
 }
 
-function saveEdit(){
+function bindToastEditorPaste(editor){
+  if(!editor || !editor.getEditorElements) return;
+  var els=editor.getEditorElements();
+  var target=(els && els.mdEditor) || document.querySelector('#cmEditor');
+  if(!target || target.__pasteBound) return;
+  target.__pasteBound=true;
+  target.addEventListener('paste', async function(e){
+    try{
+      var items=(e.clipboardData&&e.clipboardData.items)?Array.from(e.clipboardData.items):[];
+      var imgItem=items.find(function(it){ return it && it.type && /^image\//i.test(it.type); });
+      if(!imgItem) return;
+      e.preventDefault();
+      var file=imgItem.getAsFile();
+      if(!file) return;
+      var md=await uploadPastedImageFile(file);
+      insertMd(md);
+    }catch(err){
+      alert('粘贴图片失败：'+err.message);
+      console.error('TOAST UI 粘贴图片失败:', err);
+    }
+  });
+}
+
+function bindToastEditorKeyboard(editor){
+  if(!editor || !editor.getEditorElements) return;
+  var els=editor.getEditorElements();
+  var target=(els && els.mdEditor) || document.querySelector('#cmEditor');
+  if(!target || target.__keyboardBound) return;
+  target.__keyboardBound=true;
+  target.addEventListener('keydown', function(ev){
+    if(!ev) return;
+    if(ev.isComposing || ev.keyCode===229) return;
+    if(ev.key==='Tab'){
+      ev.preventDefault();
+      if(ev.stopPropagation) ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      insertMd('  ');
+      return;
+    }
+    if(ev.key==='Enter'){
+      if(handleEditorContinueEnter(ev)) return false;
+    }
+  }, true);
+}
+
+function saveEdit(opts){
+  opts=opts||{};
+  var silent=!!opts.silent;
+  var stayInEditor=!!opts.stayInEditor;
   var title=(document.getElementById('editDocTitle').value||'').trim();
-  var body;
-  if(cmEditor){body=CodeMirrorEditor.getContent(cmEditor);}
-  else{body=document.getElementById('editTextarea').value;}
-  if(!title){alert('请输入文件名');document.getElementById('editDocTitle').focus();return}
+  var body=getEditorMarkdown();
+  if(!title){
+    if(!silent){alert('请输入文件名');document.getElementById('editDocTitle').focus();}
+    return Promise.resolve(false);
+  }
   var markdown=String(body||'').replace(/\r\n/g,'\n');
   if(isNewFileMode){
     if(markdown==='') markdown=NEW_FILE_PLACEHOLDER;
@@ -1143,9 +1224,12 @@ function saveEdit(){
     if(markdown) markdown+='\n';
   }
   var fileName=title.replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
-  if(!fileName){alert('文件名无效，请重新输入');return}
+  if(!fileName){
+    if(!silent) alert('文件名无效，请重新输入');
+    return Promise.resolve(false);
+  }
   if(isNewFileMode){
-    fetch('/api/create-file',{
+    return fetch('/api/create-file',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:fileName,dir:currentDir,content:markdown})
     }).then(function(r){return r.json()}).then(function(data){
@@ -1153,90 +1237,445 @@ function saveEdit(){
         currentFile=data.path;
         isNewFileMode=false;
         pendingNewFilePath='';
-        if(cmEditor){cmEditor.destroy();cmEditor=null;}
+        if(stayInEditor){
+          document.getElementById('editTitle').textContent=fileName;
+          loadDirs();
+          if(silent) console.log('[AutoSave] 新文件已自动创建:', currentFile);
+          return true;
+        }
+        if(typeof window.stopAutoSave==='function'){
+          try{ window.stopAutoSave(); }catch(e){}
+        }
         loadDir(currentDir);
+        destroyEditor();
         showMode('modeView');viewFile(currentFile,currentFile);
-      }else alert('创建失败: '+(data.error||'未知错误'));
-    }).catch(function(e){console.error('创建失败:',e);alert('创建失败')});
-    return;
+        return true;
+      }
+      if(!silent) alert('创建失败: '+(data.error||'未知错误'));
+      else console.error('自动创建失败:', data.error||'未知错误');
+      return false;
+    }).catch(function(e){console.error('创建失败:',e);if(!silent) alert('创建失败');return false});
   }
-  var oldName=(currentFile.split('/').pop()||'').replace(/.html$/i,'');
+  var oldName=(currentFile.split('/').pop()||'').replace(/\.html$/i,'');
   var doSave=function(targetPath){
-    fetch('/api/save',{
+    return fetch('/api/save',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({path:targetPath,markdown:markdown})
     }).then(function(r){return r.json()}).then(function(data){
       if(data.success){
-        if(cmEditor){cmEditor.destroy();cmEditor=null;}
-        var oldTa=document.getElementById('editTextarea');
-        if(oldTa) oldTa.remove();
+        if(stayInEditor){
+          if(silent) console.log('[AutoSave] 已保存:', targetPath);
+          return true;
+        }
+        if(typeof window.stopAutoSave==='function'){
+          try{ window.stopAutoSave(); }catch(e){}
+        }
+        destroyEditor();
         showMode('modeView');viewFile(targetPath.split('/').pop(),targetPath);
+        return true;
       }
-      else alert('保存失败: '+(data.error||'未知错误'));
-    }).catch(function(e){console.error('保存失败:',e);alert('保存失败')})
+      if(!silent) alert('保存失败: '+(data.error||'未知错误'));
+      else console.error('自动保存失败:', data.error||'未知错误');
+      return false;
+    }).catch(function(e){console.error('保存失败:',e);if(!silent) alert('保存失败');return false});
   };
   if(fileName!==oldName){
-    fetch('/api/rename',{
+    return fetch('/api/rename',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({path:currentFile,newName:fileName+'.html'})
     }).then(function(r){return r.json()}).then(function(d){
       if(d.success){
         currentFile=(currentFile.split('/').slice(0,-1).concat([fileName+'.html'])).join('/');
-        doSave(currentFile);
-      }else alert('重命名失败: '+(d.error||'未知错误'));
-    }).catch(function(e){console.error('重命名失败:',e);alert('重命名失败')});
-  }else{
-    doSave(currentFile);
+        return doSave(currentFile);
+      }
+      if(!silent) alert('重命名失败: '+(d.error||'未知错误'));
+      else console.error('自动重命名失败:', d.error||'未知错误');
+      return false;
+    }).catch(function(e){console.error('重命名失败:',e);if(!silent) alert('重命名失败');return false});
   }
+  return doSave(currentFile);
 }
 
-// ── 新建文件 ──
 function newFile(targetDir){
   isNewFileMode=true;
   pendingNewFilePath='';
   currentDir=typeof targetDir==='string'?targetDir:(currentDir||'');
   currentFile='';
-  document.getElementById('editTitle').textContent='新建文件';
-  var titleInput=document.getElementById('editDocTitle');
-  if(titleInput) titleInput.value='';
-  var preview=document.getElementById('editPreview');
-  if(preview) preview.innerHTML=renderEditPreview('',NEW_FILE_PLACEHOLDER);
-  var parent=document.getElementById('cmEditor');
-  parent.innerHTML='';
-  var oldTa=document.getElementById('editTextarea');
-  if(oldTa) oldTa.remove();
-  if(cmEditor){cmEditor.destroy();cmEditor=null;}
-  if(typeof CodeMirrorEditor!=='undefined'){
-    cmEditor=CodeMirrorEditor.createEditor(parent,NEW_FILE_PLACEHOLDER,function(val){
-      if(typeof marked!=='undefined'&&marked.parse)
-        document.getElementById('editPreview').innerHTML=renderEditPreview(document.getElementById('editDocTitle').value,val);
-    });
-  }
-  if(!cmEditor){
-    var ta=document.createElement('textarea');
-    ta.id='editTextarea';
-    ta.style.cssText='flex:1;border:none;padding:12px;font-family:monospace;font-size:13px;line-height:1.6;resize:none;outline:none';
-    ta.value=NEW_FILE_PLACEHOLDER;
-    ta.onkeyup=function(){
-      if(typeof marked!=='undefined'&&marked.parse)
-        document.getElementById('editPreview').innerHTML=renderEditPreview(document.getElementById('editDocTitle').value,this.value);
-    };
-    parent.parentNode.insertBefore(ta,parent.nextSibling);
-  }
-  bindTitlePreview();
-  showMode('modeEdit');
-  closeMobilePreview();
-  try{ window.scrollTo(0,0); }catch(e){}
-  setTimeout(function(){
-    if(titleInput) titleInput.focus();
-    try{
-      if(cmEditor&&typeof CodeMirrorEditor.setSelection==='function'){
-        CodeMirrorEditor.setSelection(cmEditor,0,0);
-      }
-    }catch(e){}
-  },30);
+  openEditorWithContent('', NEW_FILE_PLACEHOLDER);
 }
 
+function initEditorToolbarBehavior(){
+  var toolbar=document.getElementById('mdToolbar');
+  if(!toolbar || toolbar.__bound) return;
+  toolbar.__bound=true;
+  toolbar.addEventListener('mousedown', function(e){
+    var btn=e.target && e.target.closest ? e.target.closest('.btn-tb') : null;
+    if(btn) e.preventDefault();
+  });
+}
+
+function isEditingToastMarkdown(){
+  var mode=document.getElementById('modeEdit');
+  if(!mode || !mode.classList.contains('active')) return false;
+  var host=document.getElementById('cmEditor');
+  var active=document.activeElement;
+  return !!(host && active && (host===active || host.contains(active)));
+}
+
+function initEditorKeyboardCapture(){
+  if(document.__editorKeyboardCaptureBound) return;
+  document.__editorKeyboardCaptureBound=true;
+  document.addEventListener('keydown', function(ev){
+    if(!isEditingToastMarkdown()) return;
+    if(!ev || ev.defaultPrevented || ev.isComposing || ev.keyCode===229) return;
+    // 主处理逻辑已绑定在编辑器真实输入层，这里只兜底，不重复处理。
+  }, true);
+}
+
+function closeAppDialog(id){
+  var el=document.getElementById(id);
+  if(el) el.remove();
+  setPageScrollLock(false, id);
+}
+
+function openAppDialog(id, title, bodyHtml, options){
+  closeAppDialog(id);
+  options=options||{};
+  var overlay=document.createElement('div');
+  overlay.id=id;
+  overlay.className='app-overlay';
+  overlay.style.display='flex';
+  overlay.innerHTML=''
+    + '<div class="app-dialog" style="'+(options.dialogStyle||'')+'">'
+    +   '<div class="app-dialog-head">'
+    +     '<div class="app-dialog-title">'+esc(title)+'</div>'
+    +     '<button type="button" class="app-dialog-close" aria-label="关闭">×</button>'
+    +   '</div>'
+    +   bodyHtml
+    + '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('.app-dialog-close').onclick=function(){ closeAppDialog(id); };
+  overlay.onclick=function(e){ if(e.target===overlay) closeAppDialog(id); };
+  setPageScrollLock(true, id);
+  return overlay;
+}
+
+function getFileExtension(path){
+  var m=String(path||'').match(/\.([^.\/\\]+)$/);
+  return m ? m[1].toLowerCase() : '';
+}
+
+function isImagePath(path){
+  return /^(png|jpe?g|gif|webp|bmp|svg)$/i.test(getFileExtension(path));
+}
+
+function normalizeRelativeLink(pathValue){
+  var value=String(pathValue||'').trim().replace(/\\/g,'/');
+  if(!value) return '';
+  if(/^https?:\/\//i.test(value)) return value;
+  if(value.charAt(0)==='/') return value;
+  return value.split('/').map(encodeURIComponent).join('/').replace(/%2F/g,'/');
+}
+
+function resolveInternalLinkPath(raw, fromPath){
+  var target=String(raw||'').trim().replace(/\\/g,'/');
+  if(!target) return '';
+  if(!/\.html$/i.test(target)) target+='.html';
+  if(target.indexOf('/')===-1) return target;
+  var stack=((fromPath||'').split('/').slice(0,-1)).filter(Boolean);
+  target.split('/').forEach(function(part){
+    if(!part || part==='.') return;
+    if(part==='..'){ if(stack.length) stack.pop(); return; }
+    stack.push(part);
+  });
+  return stack.join('/');
+}
+
+function buildRelativeInternalLink(targetPath, fromPath){
+  var targetParts=String(targetPath||'').replace(/\\/g,'/').split('/').filter(Boolean);
+  var fromParts=String(fromPath||'').replace(/\\/g,'/').split('/').filter(Boolean);
+  if(fromParts.length) fromParts.pop();
+  var i=0;
+  while(i<targetParts.length && i<fromParts.length && targetParts[i]===fromParts[i]) i++;
+  var rel=[];
+  for(var j=i;j<fromParts.length;j++) rel.push('..');
+  rel=rel.concat(targetParts.slice(i));
+  return rel.length ? rel.join('/') : (targetParts[targetParts.length-1] || '');
+}
+
+function openLinkDialog(){
+  var overlay=openAppDialog('editorLinkDialog','插入外部链接',
+    '<div class="app-field">'
+    + '<label class="app-label">链接文字</label><input id="extLinkText" class="app-input" type="text" placeholder="例如：OpenAI 官网">'
+    + '<label class="app-label">链接地址</label><input id="extLinkUrl" class="app-input" type="url" placeholder="https://">'
+    + '<div class="app-actions"><button type="button" class="app-btn" id="extLinkCancel">取消</button><button type="button" class="app-btn app-btn-primary" id="extLinkSubmit">插入</button></div>'
+    + '</div>');
+  document.getElementById('extLinkCancel').onclick=function(){ closeAppDialog('editorLinkDialog'); };
+  document.getElementById('extLinkSubmit').onclick=function(){
+    var text=(document.getElementById('extLinkText').value||'').trim();
+    var url=(document.getElementById('extLinkUrl').value||'').trim();
+    if(!url){ alert('请输入链接地址'); return; }
+    if(!/^(https?:\/\/|mailto:|tel:)/i.test(url)){
+      url='https://'+url.replace(/^\/+/,'');
+    }
+    var label=text||url;
+    insertMd('['+label+']('+url+')');
+    closeAppDialog('editorLinkDialog');
+  };
+  setTimeout(function(){ var el=document.getElementById('extLinkUrl'); if(el) el.focus(); }, 20);
+  return overlay;
+}
+
+function openImageDialog(){
+  var overlay=openAppDialog('editorImageDialog','插入图片',
+    '<div class="app-field">'
+    + '<label class="app-label">图片描述</label><input id="imageAltText" class="app-input" type="text" placeholder="例如：流程图">'
+    + '<label class="app-label">图片地址</label><input id="imageUrlInput" class="app-input" type="text" placeholder="/fujian/... 或 https://...">'
+    + '<label class="app-label">宽度（可选）</label><input id="imageWidthInput" class="app-input" type="number" min="1" placeholder="例如：640">'
+    + '<label class="app-label">高度（可选）</label><input id="imageHeightInput" class="app-input" type="number" min="1" placeholder="例如：480">'
+    + '<div class="app-actions"><button type="button" class="app-btn" id="imageDialogCancel">取消</button><button type="button" class="app-btn app-btn-primary" id="imageDialogSubmit">插入</button></div>'
+    + '</div>');
+  document.getElementById('imageDialogCancel').onclick=function(){ closeAppDialog('editorImageDialog'); };
+  document.getElementById('imageDialogSubmit').onclick=function(){
+    var alt=(document.getElementById('imageAltText').value||'').trim() || '图片';
+    var url=(document.getElementById('imageUrlInput').value||'').trim();
+    var width=(document.getElementById('imageWidthInput').value||'').trim();
+    var height=(document.getElementById('imageHeightInput').value||'').trim();
+    if(!url){ alert('请输入图片地址'); return; }
+    if(width || height){
+      var attrs=' src="'+url+'" alt="'+alt.replace(/"/g,'&quot;')+'"';
+      if(width) attrs+=' width="'+width+'"';
+      if(height) attrs+=' height="'+height+'"';
+      insertMd('\n\n<img'+attrs+'>\n\n');
+    }else{
+      insertMd('\n\n!['+alt+']('+url+')\n\n');
+    }
+    closeAppDialog('editorImageDialog');
+  };
+  setTimeout(function(){ var el=document.getElementById('imageUrlInput'); if(el) el.focus(); }, 20);
+  return overlay;
+}
+
+function collectAllFilesFromTree(nodes, list){
+  list=list||[];
+  (Array.isArray(nodes)?nodes:[]).forEach(function(node){
+    (node.files||[]).forEach(function(file){
+      if(file && file.path) list.push(file);
+    });
+    if(node.children && node.children.length) collectAllFilesFromTree(node.children, list);
+  });
+  return list;
+}
+
+function collectAllDirPaths(nodes, list){
+  list=list||[''];
+  (Array.isArray(nodes)?nodes:[]).forEach(function(node){
+    if(node && typeof node.path==='string') list.push(node.path);
+    if(node && node.children && node.children.length) collectAllDirPaths(node.children, list);
+  });
+  return list;
+}
+
+function showInternalLinkList(list, selectedPath){
+  return list.map(function(file){
+    var active=selectedPath===file.path?' active':'';
+    return '<div class="app-list-item'+active+'" data-path="'+escAttr(file.path)+'">'
+      + '<div class="app-list-title">'+esc(file.name||file.path.split('/').pop())+'</div>'
+      + '<div class="app-list-path">'+esc(file.path)+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+function attachFilesToDirTree(tree, fileGroups){
+  function walk(nodes){
+    return (nodes||[]).map(function(node){
+      var next={
+        type:'dir',
+        name:node.name,
+        path:node.path,
+        children:walk(node.children||[]),
+        files:(fileGroups[node.path]||[]).slice().sort(function(a,b){
+          return String(a.name||a.path).localeCompare(String(b.name||b.path),'zh-CN');
+        }),
+        _open:false
+      };
+      return next;
+    });
+  }
+  return walk(tree||[]);
+}
+
+function filterInternalLinkTree(nodes, keyword){
+  var kw=String(keyword||'').trim().toLowerCase();
+  if(!kw) return JSON.parse(JSON.stringify(nodes||[]));
+  function walk(items){
+    var out=[];
+    (items||[]).forEach(function(node){
+      var childNodes=walk(node.children||[]);
+      var files=(node.files||[]).filter(function(file){
+        var text=((file.name||'')+' '+(file.path||'')).toLowerCase();
+        return text.indexOf(kw)!==-1;
+      });
+      var selfMatch=((node.name||'')+' '+(node.path||'')).toLowerCase().indexOf(kw)!==-1;
+      if(selfMatch || childNodes.length || files.length){
+        out.push({
+          type:'dir',
+          name:node.name,
+          path:node.path,
+          children:childNodes,
+          files:files,
+          _open:true
+        });
+      }
+    });
+    return out;
+  }
+  return walk(nodes||[]);
+}
+
+function renderInternalLinkTreeHtml(nodes, selectedPath, depth){
+  depth=depth||0;
+  return (nodes||[]).map(function(node){
+    var hasChildren=(node.children&&node.children.length)||(node.files&&node.files.length);
+    var open=node._open!==false;
+    var pad=12 + depth*18;
+    var dirHtml='<div class="dir-item internal-dir-item" data-dir="'+escAttr(node.path)+'" style="padding-left:'+pad+'px">'
+      + '<span class="arrow'+(open?' expanded':'')+(hasChildren?'':' no-child')+'">'+(hasChildren?'▶':'▷')+'</span>'
+      + '<i class="bi bi-folder"></i><span class="name">'+esc(node.name)+'</span>'
+      + '</div>';
+    var fileHtml=(node.files||[]).map(function(file){
+      var active=selectedPath===file.path?' selected':'';
+      return '<div class="dir-item internal-file-item'+active+'" data-path="'+escAttr(file.path)+'" style="padding-left:'+(pad+24)+'px">'
+        + '<span class="arrow no-child">•</span><i class="bi bi-file-earmark-text"></i><span class="name">'+esc((file.name||'').replace(/\.html$/i,''))+'</span>'
+        + '</div>';
+    }).join('');
+    var childHtml=renderInternalLinkTreeHtml(node.children||[], selectedPath, depth+1);
+    return dirHtml + '<div class="dir-children'+(open?' open':'')+'">'+fileHtml+childHtml+'</div>';
+  }).join('');
+}
+
+function bindInternalLinkTree(container, treeState){
+  if(!container) return;
+  container.querySelectorAll('.internal-dir-item').forEach(function(item){
+    item.onclick=function(){
+      var child=this.nextElementSibling;
+      var arrow=this.querySelector('.arrow');
+      if(!child || !child.classList.contains('dir-children') || (arrow && arrow.classList.contains('no-child'))) return;
+      child.classList.toggle('open');
+      if(arrow) arrow.classList.toggle('expanded');
+    };
+  });
+  container.querySelectorAll('.internal-file-item').forEach(function(item){
+    item.onclick=function(e){
+      e.stopPropagation();
+      treeState.selectedPath=this.getAttribute('data-path')||'';
+      container.querySelectorAll('.internal-file-item').forEach(function(x){ x.classList.remove('selected'); });
+      this.classList.add('selected');
+    };
+  });
+}
+
+function openInternalLinkDialog(){
+  fetch('/api/dirs').then(function(r){ return r.json(); }).then(function(tree){
+      var dirPaths=collectAllDirPaths(tree, []);
+      var requests=dirPaths.map(function(dirPath){
+        return fetch('/api/list?dir='+encodeURIComponent(dirPath)).then(function(r){ return r.json(); }).then(function(data){
+          return ((data&&data.files)||[]).filter(function(f){ return f && !f.isDir && /\.html$/i.test(f.path||''); });
+        }).catch(function(){ return []; });
+      });
+      return Promise.all(requests).then(function(groups){
+        var map={};
+        groups.forEach(function(group){
+          group.forEach(function(f){
+            if(f && f.path && !map[f.path]) map[f.path]=f;
+          });
+        });
+        var fileGroups={};
+        Object.keys(map).forEach(function(k){
+          var file=map[k];
+          var dir=(file.path||'').split('/').slice(0,-1).join('/');
+          if(!fileGroups[dir]) fileGroups[dir]=[];
+          fileGroups[dir].push(file);
+        });
+        return { tree: attachFilesToDirTree(tree, fileGroups) };
+      });
+    }).then(function(payload){
+      var baseTree=payload.tree||[];
+      var treeState={ selectedPath:'', tree: baseTree };
+      var overlay=openAppDialog('editorInternalLinkDialog','插入内部链接',
+        '<div class="app-field">'
+        + '<label class="app-label">显示文字（可选）</label><input id="internalLinkText" class="app-input" type="text" placeholder="默认使用文件名">'
+        + '<label class="app-label">搜索文件</label><input id="internalLinkSearch" class="app-input" type="text" placeholder="输入关键词筛选">'
+        + '<div class="app-list" id="internalLinkList" style="min-height:360px;max-height:420px">'+renderInternalLinkTreeHtml(baseTree, '', 0)+'</div>'
+        + '<div class="app-actions"><button type="button" class="app-btn" id="internalLinkCancel">取消</button><button type="button" class="app-btn app-btn-primary" id="internalLinkSubmit">插入</button></div>'
+        + '</div>',
+        { dialogStyle:'max-width:680px;' });
+      var listEl=document.getElementById('internalLinkList');
+      bindInternalLinkTree(listEl, treeState);
+      document.getElementById('internalLinkSearch').oninput=function(){
+        treeState.tree=filterInternalLinkTree(baseTree, this.value||'');
+        listEl.innerHTML=renderInternalLinkTreeHtml(treeState.tree, treeState.selectedPath, 0);
+        bindInternalLinkTree(listEl, treeState);
+      };
+      document.getElementById('internalLinkCancel').onclick=function(){ closeAppDialog('editorInternalLinkDialog'); };
+      document.getElementById('internalLinkSubmit').onclick=function(){
+        if(!treeState.selectedPath){ alert('请选择一个文件'); return; }
+        var text=(document.getElementById('internalLinkText').value||'').trim() || treeState.selectedPath.split('/').pop().replace(/\.html$/i,'');
+        var relative=buildRelativeInternalLink(treeState.selectedPath, currentFile||'');
+        insertMd('['+text+']('+relative+')');
+        closeAppDialog('editorInternalLinkDialog');
+      };
+      setTimeout(function(){ var el=document.getElementById('internalLinkSearch'); if(el) el.focus(); }, 20);
+      return overlay;
+  }).catch(function(e){
+    alert('读取文件列表失败：'+e.message);
+  });
+}
+
+function openAssetDialog(){
+  var overlay=openAppDialog('editorAssetDialog','插入图片和附件',
+    '<div class="app-field">'
+    + '<label class="app-label">选择文件（单个，最大 5MB）</label><input id="assetFileInput" class="app-input" type="file">'
+    + '<div class="app-actions"><button type="button" class="app-btn" id="assetDialogCancel">取消</button><button type="button" class="app-btn app-btn-primary" id="assetDialogSubmit">上传并插入</button></div>'
+    + '</div>');
+  document.getElementById('assetDialogCancel').onclick=function(){ closeAppDialog('editorAssetDialog'); };
+  document.getElementById('assetDialogSubmit').onclick=async function(){
+    var input=document.getElementById('assetFileInput');
+    var file=input && input.files && input.files[0];
+    if(!file){ alert('请选择文件'); return; }
+    if(file.size>5*1024*1024){ alert('文件不能超过 5MB'); return; }
+    try{
+      var reader=new FileReader();
+      reader.onload=async function(){
+        try{
+          var dataUrl=String(reader.result||'');
+          var base64=dataUrl.split(',').pop()||'';
+          var articlePath=currentFile || ((currentDir||'') ? (String(currentDir).replace(/\\/g,'/')+'/未命名文章.html') : '未命名文章.html');
+          var r=await fetch('/api/upload-asset',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ name:file.name, contentBase64:base64, articlePath:articlePath, dir:currentDir||'' })
+          });
+          var d=await r.json();
+          if(!d.success) throw new Error(d.error||'上传失败');
+          var label=d.originalName || file.name || '附件';
+          var md=isImagePath(label)
+            ? '\n\n!['+label+']('+d.url+')\n\n'
+            : '\n\n['+label+']('+d.url+')\n\n';
+          insertMd(md);
+          closeAppDialog('editorAssetDialog');
+        }catch(err){
+          alert('上传失败：'+err.message);
+        }
+      };
+      reader.onerror=function(){ alert('读取文件失败'); };
+      reader.readAsDataURL(file);
+    }catch(e){
+      alert('上传失败：'+e.message);
+    }
+  };
+  return overlay;
+}
 // ── 新建文件夹 ──
 function newFolder(){document.getElementById('newFolderName').value='';var m=new bootstrap.Modal(document.getElementById('newFolderModal'));m.show()}
 function doNewFolder(){
@@ -1392,40 +1831,17 @@ function sendUpload(files){
 }
 
 
+
 // ── 撤销/重做 ──
-var editHistory=[];
-var editHistoryIdx=-1;
-var editHistoryMax=100;
-var editIgnoreChange=false;
-
-function initEditHistory(){
-  editHistory=[];
-  editHistoryIdx=-1;
-  var ta=document.getElementById("editTextarea");
-  if(ta)saveEditState();
-}
-
-function saveEditState(){
-  var ta=document.getElementById("editTextarea");
-  if(!ta)return;
-  var val=ta.value;
-  // 如果当前状态和最后一个相同，不重复记录
-  if(editHistory.length>0&&editHistory[editHistory.length-1]===val)return;
-  // 删除当前位置之后的历史
-  if(editHistoryIdx<editHistory.length-1)editHistory=editHistory.slice(0,editHistoryIdx+1);
-  editHistory.push(val);
-  if(editHistory.length>editHistoryMax)editHistory.shift();
-  editHistoryIdx=editHistory.length-1;
-}
-
 function undoEdit(){
-  if(cmEditor){CodeMirrorEditor.undoEdit(cmEditor);}
+  var editor=getEditorInstance();
+  if(editor){ editor.exec('undo'); focusEditor(); refreshEditPreview(); }
 }
 
 function redoEdit(){
-  if(cmEditor){CodeMirrorEditor.redoEdit(cmEditor);}
+  var editor=getEditorInstance();
+  if(editor){ editor.exec('redo'); focusEditor(); refreshEditPreview(); }
 }
-
 
 // ── 初始化 ──
 document.addEventListener('DOMContentLoaded',function(){
@@ -1445,6 +1861,8 @@ document.addEventListener('DOMContentLoaded',function(){
       toggleSelectAll(this.checked);
     });
   }
+  initEditorToolbarBehavior();
+  initEditorKeyboardCapture();
 });
 
 window.navPush = navPush;
@@ -1453,6 +1871,18 @@ window.viewFile = viewFile;
 window.openFromWorkbench = openFromWorkbench;
 window.newFile = newFile;
 window.backToList = backToList;
+window.editFromView = editFromView;
+window.backToView = backToView;
+window.wrapMd = wrapMd;
+window.insertMd = insertMd;
+window.saveEdit = saveEdit;
+window.undoEdit = undoEdit;
+window.redoEdit = redoEdit;
+window.openLinkDialog = openLinkDialog;
+window.openInternalLinkDialog = openInternalLinkDialog;
+window.openImageDialog = openImageDialog;
+window.openAssetDialog = openAssetDialog;
+window.resolveInternalLinkPath = resolveInternalLinkPath;
 
 window.addEventListener('resize',function(){
   if(!isMobileViewport()){

@@ -30181,6 +30181,21 @@ var CodeMirrorEditor = (() => {
   });
 
   // cm-editor.js
+  function extraInputCompatibility() {
+    return EditorView.domEventHandlers({
+      compositionend(event, view) {
+        try {
+          if (view && view.dom) {
+            setTimeout(() => {
+              if (typeof oncompositionend === "undefined") return;
+            }, 0);
+          }
+        } catch (e) {
+        }
+        return false;
+      }
+    });
+  }
   function createEditor(parent, content2, onUpdate) {
     const state = EditorState.create({
       doc: content2,
@@ -30188,6 +30203,13 @@ var CodeMirrorEditor = (() => {
         basicSetup,
         EditorView.lineWrapping,
         markdown(),
+        EditorView.contentAttributes.of({
+          autocapitalize: "off",
+          autocomplete: "off",
+          autocorrect: "off",
+          spellcheck: "false"
+        }),
+        extraInputCompatibility(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged && onUpdate) onUpdate(update.state.doc.toString());
         })

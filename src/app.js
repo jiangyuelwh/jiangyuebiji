@@ -20,6 +20,7 @@ const searchRouter = require('./routes/search');
 const settingsRouter = require('./routes/settings');
 const settingsService = require('./services/settings-service');
 const taskService = require('./services/task-service');
+const fileService = require('./services/file-service');
 
 const app = express();
 
@@ -35,7 +36,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/static', express.static(STATIC_DIR));
 app.use(settingsService.authGuard);
-app.use('/articles', express.static(ARTICLES_DIR));
 app.use('/fujian', express.static(FUJIAN_DIR));
 app.use('/system/tasks', express.static(SYSTEM_TASKS_DIR));
 
@@ -56,6 +56,17 @@ app.get('/system/workbench', (req, res) => {
 
 app.get('/system/settings', (req, res) => {
   res.sendFile(path.join(TEMPLATES_DIR, 'settings.html'));
+});
+
+app.get('/articles/*', (req, res) => {
+  try {
+    const relPath = decodeURIComponent(String(req.path || '').replace(/^\/articles\//, ''));
+    const html = fileService.renderArticleHtml(relPath);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    res.status(e.statusCode || 500).send(e.message || '读取文章失败');
+  }
 });
 
 app.get('/login', (req, res) => {

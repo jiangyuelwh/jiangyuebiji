@@ -26,7 +26,7 @@ function startAutoSave() {
   autoSaveTimer = setInterval(function() {
     if (document.getElementById("modeEdit").classList.contains("active")) {
       console.log("[AutoSave] 自动保存...");
-      saveEdit();
+      saveEdit({ silent:true, stayInEditor:true });
     }
   }, 120000); // 2分钟
 }
@@ -112,7 +112,7 @@ function showContextMenu(e, path, isDir) {
   if (isDir) {
     items.push({ icon: "bi-file-plus", text: "新建文件", action: function() { currentDir = path; newFile(); } });
     items.push({ icon: "bi-folder-plus", text: "新建文件夹", action: function() { currentDir = path; newFolder(); } });
-    items.push({ icon: "bi-arrow-down-up", text: "展开/聚合", action: function() { toggleExpandDir(path); } });
+    items.push({ icon: "bi-arrow-down-up", text: isAllDirsExpanded() ? "聚合全部" : "展开全部", action: function() { toggleExpandDir(path); } });
     items.push({ icon: "bi-pencil", text: "重命名", action: function() { renameItem(path.split("/").pop(), path, true); } });
   } else {
     items.push({ icon: "bi-pencil", text: "重命名", action: function() { renameItem(path.split("/").pop(), path, false); } });
@@ -140,29 +140,35 @@ document.addEventListener("scroll", hideContextMenu, true);
 
 
 // expand/collapse toggle
+function isAllDirsExpanded() {
+  var groups = document.querySelectorAll("#dirTree .dir-children");
+  if (!groups.length) return false;
+  for (var i = 0; i < groups.length; i++) {
+    if (!groups[i].classList.contains("open")) return false;
+  }
+  return true;
+}
+
+function setAllDirTreeExpanded(expand) {
+  var groups = document.querySelectorAll("#dirTree .dir-children");
+  var arrows = document.querySelectorAll("#dirTree .dir-item > .arrow:not(.no-child)");
+  for (var i = 0; i < groups.length; i++) {
+    if (expand) groups[i].classList.add("open");
+    else groups[i].classList.remove("open");
+  }
+  for (var j = 0; j < arrows.length; j++) {
+    if (expand) arrows[j].classList.add("expanded");
+    else arrows[j].classList.remove("expanded");
+  }
+  var status = document.getElementById("dirTreeStatus");
+  if (status) status.textContent = expand ? "已展开全部目录" : "已聚合全部目录";
+}
+
 function toggleExpandDir(path) {
   hideContextMenu();
-  var firstChild = null;
-  if (path === "") {
-    firstChild = document.querySelector("#dirTree > .dir-children");
-  } else {
-    var items = document.querySelectorAll("#dirTree .dir-item");
-    for (var i = 0; i < items.length; i++) {
-      if (items[i].dataset.path === path) {
-        firstChild = items[i].nextElementSibling;
-        break;
-      }
-    }
-  }
-  if (!firstChild || !firstChild.classList.contains("dir-children")) return;
-  var anyCollapsed = false;
-  var allChildren = firstChild.querySelectorAll(":scope > .dir-children");
-  for (var i = 0; i < allChildren.length; i++) {
-    if (!allChildren[i].classList.contains("open")) { anyCollapsed = true; break; }
-  }
-  var expand = anyCollapsed || !firstChild.classList.contains("open");
-  toggleDeep(firstChild, expand);
+  setAllDirTreeExpanded(!isAllDirsExpanded());
 }
+
 function toggleDeep(el, expand) {
   if (expand) el.classList.add("open"); else el.classList.remove("open");
   var arrows = el.querySelectorAll(".dir-item > .arrow");
@@ -217,21 +223,6 @@ try { if (localStorage.getItem("liruibiji_dark") === "1") document.body.classLis
   initDrag();
   // viewFile already tracks recent from the file row onclick
   // Patch editFromView to start auto-save
-  var origEdit = window.editFromView;
-  if (origEdit) {
-    window.editFromView = function() {
-      startAutoSave();
-      return origEdit.apply(this, arguments);
-    };
-  }
-  // Patch backToView to stop auto-save
-  var origBack = window.backToView || window.cancelEdit;
-  if (origBack) {
-    window.backToView = function() {
-      stopAutoSave();
-      return origBack.apply(this, arguments);
-    };
-  }
   
   // Add right-click on dir tree items
   document.getElementById("dirTree").addEventListener("contextmenu", function(e) {
@@ -433,3 +424,25 @@ function closeToolbarReorderDialog() {
 }
 
 setTimeout(restoreToolbarOrder, 0);
+
+
+document.addEventListener('DOMContentLoaded', function(){
+  setTimeout(function(){
+    var origEdit = window.editFromView;
+    if (origEdit && !window.__editFromViewPatched) {
+      window.__editFromViewPatched = true;
+      window.editFromView = function() {
+        startAutoSave();
+        return origEdit.apply(this, arguments);
+      };
+    }
+    var origBack = window.backToView || window.cancelEdit;
+    if (origBack && !window.__backToViewPatched) {
+      window.__backToViewPatched = true;
+      window.backToView = function() {
+        stopAutoSave();
+        return origBack.apply(this, arguments);
+      };
+    }
+  }, 0);
+});

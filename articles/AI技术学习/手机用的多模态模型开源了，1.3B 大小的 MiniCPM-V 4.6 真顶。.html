@@ -7,7 +7,13 @@
 <link rel="stylesheet" href="/static/github-markdown.min.css">
 <style>
   body { margin:0; background:#fff; }
-  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  body.view-font-lg .markdown-body{font-size:20px;line-height:2}
+  body.view-font-sm .markdown-body{font-size:17px;line-height:1.85}
+  .view-actions{position:fixed;top:14px;right:14px;z-index:1200;display:flex;gap:8px;align-items:center}
+  .view-font-btn{height:38px;min-width:38px;padding:0 12px;border:1px solid rgba(208,215,222,.95);background:rgba(255,255,255,.86);border-radius:10px;cursor:pointer;font-size:18px;font-weight:700;color:#0f172a;box-shadow:0 2px 10px rgba(0,0,0,.08);backdrop-filter:blur(6px)}
+  .view-font-btn:hover{background:#fff;border-color:#bfd3ea}
+  .article-spacer{height:1.4em;flex:0 0 auto}
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; font-size:18px; line-height:1.9; }
   .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
   .wiki-link:hover { border-bottom-style:solid; }
   .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
@@ -15,7 +21,7 @@
   .md-asset-icon { font-size:16px; }
   .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .md-asset-image { margin:12px 0; }
-  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image img { max-width:100%; width:auto; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
   .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
   .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
   .markdown-body code { word-break:break-word; }
@@ -26,12 +32,13 @@
   .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
   .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
   .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
-  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+  @media (max-width:767px) { .view-actions{top:10px;right:10px}.view-font-btn{height:36px;min-width:36px;padding:0 10px;font-size:17px}.markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
 </style>
 </head>
 <body>
-<article class="markdown-body"><hr>
-<h2>title: &quot;手机用的多模态模型开源了，1.3B 大小的 MiniCPM-V 4.6 真顶。&quot;<br>source: &quot;<a href="https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw">https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw</a>&quot;<br>author:<br>  - &quot;<a class="wiki-link" href="javascript:void(0)" onclick="_openWikiLink('AI技术学习/逛逛.html','逛逛')">逛逛</a>&quot;<br>published:<br>created: 2026-05-14<br>description:<br>tags:<br>  - &quot;clippings&quot;</h2>
+<div class="view-actions"><button type="button" class="view-font-btn" id="fontMinusBtn" aria-label="字体变小" title="字体变小">A-</button><button type="button" class="view-font-btn" id="fontPlusBtn" aria-label="字体变大" title="字体变大">A+</button></div>
+<article class="markdown-body"><div class="article-spacer" aria-hidden="true"></div><hr>
+<h2>title: &quot;手机用的多模态模型开源了，1.3B 大小的 MiniCPM-V 4.6 真顶。&quot;<br>source: &quot;<a href="https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw" target="_blank" rel="noopener noreferrer">https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw</a>&quot;<br>author:<br>  - &quot;<a class="wiki-link" href="javascript:void(0)" onclick="_openWikiLink('AI技术学习/逛逛.html','逛逛')">逛逛</a>&quot;<br>published:<br>created: 2026-05-14<br>description:<br>tags:<br>  - &quot;clippings&quot;</h2>
 <p>逛逛 <em>2026年5月13日 13:51</em></p>
 <p>面壁智能又开源了一个 1B 的多模态模型：MiniCPM-V 4.6，所有手机都能跑。</p>
 <p><strong>这是 MiniCPM-V 系列有史以来参数最小的模型，只有 1.3B。</strong></p>
@@ -89,7 +96,7 @@
 <p>16 倍压缩不是噱头，快手已经用在生产环境了。</p>
 <p>快手 2025 年推出的 OneRec 推荐大模型，用 MiniCPM-V-8B 处理视频的字幕、标签、ASR、OCR、封面图等多模态表征， <strong>承接了快手短视频推荐主场景 25% 的请求。</strong></p>
 <p>日活几亿的产品，16 倍压缩扛住了。</p>
-<p>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</p>
+<p>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg" target="_blank" rel="noopener noreferrer">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg" target="_blank" rel="noopener noreferrer">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</p>
 <p>03</p>
 <p><strong>门槛降低了</strong></p>
 <p><strong>1.3B 参数意味着基本上所有个人设备都能跑。手机、电脑、车机、智能家具，不需要高端芯片。</strong></p>
@@ -98,7 +105,7 @@
 <p><strong>而且生态全打通：</strong></p>
 <ul>
 <li>微调框架：ms-swift、LLaMA-Factory</li>
-<li>推理部署：vLLM、SGLang、llama.cpp、Ollama<br>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E) ![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</li>
+<li>推理部署：vLLM、SGLang、llama.cpp、Ollama<br>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg" target="_blank" rel="noopener noreferrer">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg" target="_blank" rel="noopener noreferrer">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E) ![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg" target="_blank" rel="noopener noreferrer">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg" target="_blank" rel="noopener noreferrer">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</li>
 </ul>
 <p>主流框架全覆盖，不需要自己折腾环境。准备好数据，改几行配置，一键拉起训练。</p>
 <p>端侧部署指南：</p>
@@ -125,7 +132,7 @@
 <p>04</p>
 <p><strong>点击下方卡片，关注逛逛 GitHub</strong></p>
 <p>这个公众号历史发布过很多有趣的开源项目，如果你懒得翻文章一个个找，你直接关注微信公众号：逛逛 GitHub ，后台对话聊天就行了：</p>
-<p>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</p>
+<p>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg" target="_blank" rel="noopener noreferrer">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg" target="_blank" rel="noopener noreferrer">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</p>
 <p>逛逛GitHub · 目录</p>
 <p>继续滑动看下一个</p>
 <p>逛逛GitHub</p>
@@ -133,7 +140,7 @@
 </article>
 <div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
 
-<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");var plus=document.getElementById("fontPlusBtn");var minus=document.getElementById("fontMinusBtn");var key="liruibiji_view_font";if(plus&&minus){function applyFont(mode){document.body.classList.remove("view-font-sm","view-font-lg");if(mode==="lg")document.body.classList.add("view-font-lg");else if(mode==="sm")document.body.classList.add("view-font-sm");try{localStorage.setItem(key,mode||"md")}catch(e){}}try{applyFont(localStorage.getItem(key)||"md")}catch(e){}plus.addEventListener("click",function(){if(document.body.classList.contains("view-font-sm"))applyFont("md");else applyFont("lg")});minus.addEventListener("click",function(){if(document.body.classList.contains("view-font-lg"))applyFont("md");else applyFont("sm")})}if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
 </body>
 </html>
 <!--source-md
