@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今日任务</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<article class="markdown-body"><div class="task-page-actions"><button id="addTaskBtn" class="task-page-btn task-page-btn-primary">➕ 添加今日任务</button><button id="genTaskBtn" class="task-page-btn task-page-btn-success">📋 添加模板任务</button><button id="openTemplateBtn" class="task-page-btn" style="background:#f59e0b;color:#fff">🗂 每日任务模板</button></div><div id="addTaskModal" class="modal-overlay" style="display:none"><div class="modal-box"><h3>添加今日任务</h3><input id="taskText" type="text" placeholder="任务内容" autocomplete="off"><div class="modal-actions"><button id="taskCancel">取消</button><button id="taskSubmit" class="btn-primary">确认添加</button></div></div></div><style>.task-page-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.task-page-btn{padding:8px 18px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;line-height:1.4}.task-page-btn-primary{background:#0969da;color:#fff}.task-page-btn-success{background:#2da44e;color:#fff}.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:80px 12px 24px}.modal-box{background:#fff;padding:24px;border-radius:12px;width:100%;max-width:400px;max-height:calc(100vh - 120px);overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.15)}.modal-box h3{margin:0 0 16px;font-size:18px}.modal-box input{width:100%;box-sizing:border-box;padding:10px 12px;margin:0 0 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap}.modal-actions button{padding:8px 20px;border-radius:6px;border:1px solid #d0d7de;background:#f6f8fa;cursor:pointer;font-size:14px}.modal-actions .btn-primary{background:#0969da;color:#fff;border-color:#0969da}.modal-actions .btn-primary:hover{background:#0550ae}@media (max-width:767px){.task-page-actions{flex-direction:column}.task-page-btn{width:100%;padding:10px 14px}.modal-overlay{padding:56px 10px 18px}.modal-box{max-width:none;border-radius:10px;max-height:calc(100vh - 74px)}.modal-actions button{flex:1 1 0;min-width:0}}@media (max-width:420px){.task-page-btn{font-size:13px;padding:9px 12px}.modal-box{padding:18px 14px}.modal-box h3{font-size:16px}.modal-box input{font-size:13px}}</style><script>var gm=null;function ensureGenModal(){if(gm)return;gm=document.createElement('div');gm.id='genTaskModal';gm.className='modal-overlay';gm.style.display='none';gm.innerHTML='<div class="modal-box"><h3>模板任务预览</h3><div id="genTaskPreview" style="max-height:300px;overflow-y:auto;margin:0 0 16px;background:#f6f8fa;border-radius:6px;padding:12px;font-size:14px;line-height:1.8"></div><div class="modal-actions"><button id="genTaskCancel">取消</button><button id="genTaskConfirm" class="btn-primary">确认添加</button></div></div>';document.body.appendChild(gm);document.getElementById('genTaskCancel').onclick=function(){gm.style.display='none'};gm.onclick=function(e){if(e.target===this)this.style.display='none'};document.getElementById('genTaskConfirm').onclick=async function(){try{var r=await fetch('/api/tasks/today/generate',{method:'POST'});var d=await r.json();if(d.success){gm.style.display='none';alert('已添加 '+d.count+' 个模板任务');location.reload()}else alert('添加失败: '+(d.error||''))}catch(e){alert('添加失败: '+e.message)}}}document.addEventListener('DOMContentLoaded',function(){ensureGenModal();document.getElementById('addTaskBtn').onclick=function(){document.getElementById('addTaskModal').style.display='flex'};document.getElementById('genTaskBtn').onclick=async function(){ensureGenModal();try{var r=await fetch('/api/tasks/template');var d=await r.json();if(d.items&&d.items.length){var h=d.items.map(function(it){return '<div>➕ '+it+'</div>';}).join('');document.getElementById('genTaskPreview').innerHTML=h;gm.style.display='flex'}else alert('模板中无任务项')}catch(e){alert('读取模板失败: '+e.message)}};document.getElementById('openTemplateBtn').onclick=function(){try{if(window.parent&&window.parent!==window&&typeof window.parent.openFromWorkbench==='function'){window.parent.openFromWorkbench('每日任务模板','__system__/任务管理/每日任务模板.html');return}}catch(e){}location.href='/system/tasks/%E6%AF%8F%E6%97%A5%E4%BB%BB%E5%8A%A1%E6%A8%A1%E6%9D%BF.html'};document.getElementById('taskCancel').onclick=function(){document.getElementById('addTaskModal').style.display='none'};document.getElementById('addTaskModal').onclick=function(e){if(e.target===this)this.style.display='none'};document.getElementById('taskSubmit').onclick=addTask;});async function addTask(){var t=document.getElementById('taskText').value.trim();if(!t){alert('请输入内容');return}try{var dd=new Date();var ds=dd.toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'});var r=await fetch('/api/tasks/today/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t,date:ds})});var j=await r.json();if(j.success)location.reload();else alert('失败: '+(j.error||''))}catch(e){alert('失败: '+e.message)}}</script><h1>今日任务</h1>
+<p>🌞 2026-06-17 | 星期三<br>✨ 今日计划</p>
+<ul>
+<li><input disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-17<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-17<!-- 每日任务 --></li>
+</ul>
+<hr>
+<p>🌆 2026-06-16 | 星期二<br>✨ 今日计划</p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-16<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-16<!-- 每日任务 --></li>
+</ul>
+<hr>
+<p>🌙 2026-06-15 | 星期一<br>✨ 今日计划</p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> trace_test_1781455976249 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 44444 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> debug_test_1781455847563 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> test_sim_1781455797396 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> test_timezone_1781455772825 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-15<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-15<!-- 每日任务 --></li>
+</ul>
+<hr>
+<p>🌞 2026-06-14 | 星期日<br>🧘 今日计划</p>
+<ul>
+<li><input disabled="" type="checkbox"> 44444 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 2222 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 88888 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 1111 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 99999 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 66666 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-14<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 加油 📅 2026-06-14<!-- 每日任务 --></li>
+</ul>
+<hr>
+<p>⛅ 2026-06-13 | 星期六<br>🧘 今日计划</p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 测试任务 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 测试任务 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> test 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 1111 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 二太太 📅 2026-06-13<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 44444 📅 2026-06-13<!-- 每日任务 --></li>
+</ul>
+<hr>
+<p>🌞 2026-06-12 | 星期五<br>🧘 今日计划</p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 🧘 站桩10分钟 📅 2026-06-12<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🤸 跳绳1000下 📅 2026-06-12<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 🥗 健康饮食 📅 2026-06-12<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 💨 米诺地尔 📅 2026-06-12<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 立普妥半粒 📅 2026-06-12<!-- 每日任务 --></li>
+<li><input checked="" disabled="" type="checkbox"> 💊 三七粉 📅 2026-06-12<!-- 每日任务 --></li>
+<li><input disabled="" type="checkbox"> 📚 督促小孩学英语 📅 2026-06-12<!-- 每日任务 --></li>
+</ul>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+# 今日任务
+
+🌞 2026-06-17 | 星期三
+✨ 今日计划
+
+- [ ] 📚 督促小孩学英语 📅 2026-06-17%%每日任务%%
+- [ ] 🧘 站桩10分钟 📅 2026-06-17%%每日任务%%
+- [ ] 🤸 跳绳1000下 📅 2026-06-17%%每日任务%%
+- [ ] 🥗 健康饮食 📅 2026-06-17%%每日任务%%
+- [ ] 💨 米诺地尔 📅 2026-06-17%%每日任务%%
+- [ ] 💊 立普妥半粒 📅 2026-06-17%%每日任务%%
+- [ ] 💊 三七粉 📅 2026-06-17%%每日任务%%
+- [ ] 📚 督促小孩学英语 📅 2026-06-17%%每日任务%%
+
+---
+
+🌆 2026-06-16 | 星期二
+✨ 今日计划
+- [x] 🧘 站桩10分钟 📅 2026-06-16%%每日任务%%
+- [x] 🤸 跳绳1000下 📅 2026-06-16%%每日任务%%
+- [x] 🥗 健康饮食 📅 2026-06-16%%每日任务%%
+- [x] 💨 米诺地尔 📅 2026-06-16%%每日任务%%
+- [x] 💊 立普妥半粒 📅 2026-06-16%%每日任务%%
+- [ ] 💊 三七粉 📅 2026-06-16%%每日任务%%
+- [ ] 📚 督促小孩学英语 📅 2026-06-16%%每日任务%%
+- [x] 🧘 站桩10分钟 📅 2026-06-16%%每日任务%%
+- [x] 🤸 跳绳1000下 📅 2026-06-16%%每日任务%%
+- [x] 🥗 健康饮食 📅 2026-06-16%%每日任务%%
+- [x] 💨 米诺地尔 📅 2026-06-16%%每日任务%%
+- [x] 💊 立普妥半粒 📅 2026-06-16%%每日任务%%
+- [x] 💊 三七粉 📅 2026-06-16%%每日任务%%
+- [x] 📚 督促小孩学英语 📅 2026-06-16%%每日任务%%
+
+---
+
+🌙 2026-06-15 | 星期一
+✨ 今日计划
+- [x] trace_test_1781455976249 📅 2026-06-15%%每日任务%%
+- [x] 44444 📅 2026-06-15%%每日任务%%
+- [ ] debug_test_1781455847563 📅 2026-06-15%%每日任务%%
+- [x] test_sim_1781455797396 📅 2026-06-15%%每日任务%%
+- [x] test_timezone_1781455772825 📅 2026-06-15%%每日任务%%
+- [x] 🧘 站桩10分钟 📅 2026-06-15%%每日任务%%
+- [ ] 🤸 跳绳1000下 📅 2026-06-15%%每日任务%%
+- [ ] 🥗 健康饮食 📅 2026-06-15%%每日任务%%
+- [x] 💨 米诺地尔 📅 2026-06-15%%每日任务%%
+- [ ] 💊 立普妥半粒 📅 2026-06-15%%每日任务%%
+- [ ] 💊 三七粉 📅 2026-06-15%%每日任务%%
+- [x] 📚 督促小孩学英语 📅 2026-06-15%%每日任务%%
+- [x] 🧘 站桩10分钟 📅 2026-06-15%%每日任务%%
+- [x] 🤸 跳绳1000下 📅 2026-06-15%%每日任务%%
+- [x] 🥗 健康饮食 📅 2026-06-15%%每日任务%%
+- [x] 💨 米诺地尔 📅 2026-06-15%%每日任务%%
+- [x] 💊 立普妥半粒 📅 2026-06-15%%每日任务%%
+- [ ] 💊 三七粉 📅 2026-06-15%%每日任务%%
+- [x] 📚 督促小孩学英语 📅 2026-06-15%%每日任务%%
+- [x] 🧘 站桩10分钟 📅 2026-06-15%%每日任务%%
+- [x] 🤸 跳绳1000下 📅 2026-06-15%%每日任务%%
+- [x] 🥗 健康饮食 📅 2026-06-15%%每日任务%%
+- [x] 💨 米诺地尔 📅 2026-06-15%%每日任务%%
+- [x] 💊 立普妥半粒 📅 2026-06-15%%每日任务%%
+- [x] 💊 三七粉 📅 2026-06-15%%每日任务%%
+- [x] 📚 督促小孩学英语 📅 2026-06-15%%每日任务%%
+
+---
+
+🌞 2026-06-14 | 星期日
+🧘 今日计划
+- [ ] 44444 📅 2026-06-14%%每日任务%%
+- [ ] 2222 📅 2026-06-14%%每日任务%%
+- [x] 88888 📅 2026-06-14%%每日任务%%
+- [x] 1111 📅 2026-06-14%%每日任务%%
+- [x] 99999 📅 2026-06-14%%每日任务%%
+- [ ] 66666 📅 2026-06-14%%每日任务%%
+- [ ] 📚 督促小孩学英语 📅 2026-06-14%%每日任务%%
+- [ ] 加油 📅 2026-06-14%%每日任务%%
+
+---
+
+⛅ 2026-06-13 | 星期六
+🧘 今日计划
+- [x] 🧘 站桩10分钟 📅 2026-06-13%%每日任务%%
+- [x] 🤸 跳绳1000下 📅 2026-06-13%%每日任务%%
+- [x] 🥗 健康饮食 📅 2026-06-13%%每日任务%%
+- [x] 💨 米诺地尔 📅 2026-06-13%%每日任务%%
+- [x] 💊 立普妥半粒 📅 2026-06-13%%每日任务%%
+- [x] 测试任务 📅 2026-06-13%%每日任务%%
+- [x] 测试任务 📅 2026-06-13%%每日任务%%
+- [x] test 📅 2026-06-13%%每日任务%%
+- [x] 1111 📅 2026-06-13%%每日任务%%
+- [x] 二太太 📅 2026-06-13%%每日任务%%
+- [x] 44444 📅 2026-06-13%%每日任务%%
+
+---
+
+🌞 2026-06-12 | 星期五
+🧘 今日计划
+- [x] 🧘 站桩10分钟 📅 2026-06-12%%每日任务%%
+- [x] 🤸 跳绳1000下 📅 2026-06-12%%每日任务%%
+- [x] 🥗 健康饮食 📅 2026-06-12%%每日任务%%
+- [ ] 💨 米诺地尔 📅 2026-06-12%%每日任务%%
+- [x] 💊 立普妥半粒 📅 2026-06-12%%每日任务%%
+- [x] 💊 三七粉 📅 2026-06-12%%每日任务%%
+- [ ] 📚 督促小孩学英语 📅 2026-06-12%%每日任务%%
+/source-md-->

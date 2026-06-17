@@ -1,70 +1,3 @@
-// ── 移动到 ──
-var moveItemName="",moveItemPath="",moveTargetDir="";
-function moveItem(name,path){
-  moveItemName=name;moveItemPath=path;moveTargetDir='';
-  var el=document.getElementById("moveDirTree");
-  el.innerHTML="<div style='padding:8px;color:#999;'>加载中...</div>";
-  fetch("/api/dirs").then(function(r){return r.json()}).then(function(dirs){
-    el.innerHTML="";
-    var rootEl=document.createElement("div");
-    rootEl.className="dir-item";rootEl.dataset.path="";
-    rootEl.innerHTML='<i class="bi bi-folder"></i> /';
-    rootEl.onclick=function(){
-      document.querySelectorAll("#moveDirTree .dir-item").forEach(function(x){x.classList.remove("selected")});
-      this.classList.add("selected");
-      moveTargetDir="";
-      document.getElementById("moveBtn").disabled=false;
-    };
-    el.appendChild(rootEl);
-    (function build(parent,items){
-      items.forEach(function(d){
-        if(d.type!=="dir")return;
-        var div=document.createElement("div");
-        div.className="dir-item";div.dataset.path=d.path;
-        div.innerHTML='<i class="bi bi-folder"></i> '+d.name;
-        div.onclick=function(){
-          document.querySelectorAll("#moveDirTree .dir-item").forEach(function(x){x.classList.remove("selected")});
-          this.classList.add("selected");
-          moveTargetDir=d.path;
-          document.getElementById("moveBtn").disabled=false;
-        };
-        parent.appendChild(div);
-        if(d.children&&d.children.length){
-          var cd=document.createElement('div');
-          cd.style.marginLeft='20px';
-          build(cd,d.children);
-          parent.appendChild(cd);
-        }
-      });
-    })(el,dirs);
-  });
-  new bootstrap.Modal(document.getElementById("moveModal")).show();
-}
-function doMove(){
-  if(!moveItemPath&&!window._moveAllPaths)return;
-  document.getElementById("moveBtn").disabled=true;
-  document.getElementById("moveBtn").textContent="移动中...";
-  var target=moveTargetDir;
-  var pathsToMove=window._moveAllPaths||[moveItemPath];
-  window._moveAllPaths=null;
-  function doNext(){
-    var p=pathsToMove.shift();
-    if(!p){
-      bootstrap.Modal.getInstance(document.getElementById("moveModal")).hide();
-      loadDir(currentDir);loadDirs();
-      document.getElementById("moveBtn").disabled=false;
-      document.getElementById("moveBtn").textContent="移动";
-      return;
-    }
-    fetch("/api/move",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:p,targetDir:target})})
-    .then(function(r){return r.json()}).then(function(d){
-      if(!d.success) alert("移动失败: "+p+" -> "+(d.error||""));
-      doNext();
-    }).catch(function(e){console.error("移动失败:",e);alert("移动失败: "+p);doNext();});
-  }
-  doNext();
-}
-
 // ── 快捷键 ──
 document.addEventListener("keydown", function(e) {
   // Ctrl+S 保存
@@ -125,43 +58,6 @@ function renderRecent() {
     d.onclick = function() { viewFile(item.title, item.path); };
     el.appendChild(d);
   });
-}
-
-// ── 批量操作 ──
-var selectedFiles = [];
-function toggleFileSelect(path, checked) {
-  console.log("tFS called:", path, checked);
-  if (checked) { if (selectedFiles.indexOf(path) < 0) selectedFiles.push(path); }
-  else { var idx = selectedFiles.indexOf(path); if (idx >= 0) selectedFiles.splice(idx, 1); }
-  console.log("selFiles:", selectedFiles.length);
-  document.getElementById("batchBar").classList.toggle("show", selectedFiles.length > 0);
-  document.getElementById("batchCount").textContent = selectedFiles.length + " 项";
-}
-function batchDelete() {
-  if (selectedFiles.length === 0) return;
-  if (!confirm("确定删除选中的 " + selectedFiles.length + " 项？")) return;
-  var paths = selectedFiles.slice();
-  selectedFiles = [];
-  document.getElementById("batchBar").classList.remove("show");
-  var done = 0, total = paths.length;
-  paths.forEach(function(p) {
-    fetch("/api/delete", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:p})})
-    .then(function(r){return r.json()}).then(function(d){
-      done++;
-      if(done >= total) { loadDir(currentDir); loadDirs(); }
-    }).catch(function(e){
-      console.error("删除失败:",e);
-      done++;
-      if(done >= total) { loadDir(currentDir); loadDirs(); }
-    });
-  });
-}function batchMove() {
-  if (selectedFiles.length === 0) return;
-  var names = selectedFiles.map(function(p) { return p.split("/").pop(); });
-  moveItem(names[0], selectedFiles[0]);
-  window._moveAllPaths = selectedFiles.slice();
-  selectedFiles = [];
-  document.getElementById("batchBar").classList.remove("show");
 }
 
 // ── 拖拽移动 ──
@@ -420,7 +316,7 @@ function toggleReorder() {
   var btn = document.getElementById('reorderBtn');
   if (!btn) return;
   if (toolbarReorderActive) {
-    btn.style.background = '#1a73e8';
+    btn.style.background = '#477F8A';
     btn.style.color = '#fff';
     btn.style.borderRadius = '4px';
     showToolbarReorderDialog();
@@ -483,7 +379,7 @@ function showToolbarReorderDialog() {
     item.addEventListener('dragover', function(e) {
       e.preventDefault();
       Array.from(list.children).forEach(function(el) { el.style.border = '1px solid #e5e7eb'; });
-      this.style.border = '2px solid #1a73e8';
+      this.style.border = '2px solid #477F8A';
     });
     item.addEventListener('drop', function(e) {
       e.preventDefault();
@@ -509,7 +405,7 @@ function showToolbarReorderDialog() {
 
   var footer = document.createElement('div');
   footer.style.cssText = 'padding:12px 20px;border-top:1px solid #e8e8e8;display:flex;gap:8px;justify-content:flex-end';
-  footer.innerHTML = '<button id="toolbarReorderCancel" style="padding:8px 20px;border:1px solid #d0d7de;border-radius:6px;background:#f6f8fa;cursor:pointer;font-size:14px">取消</button><button id="toolbarReorderConfirm" style="padding:8px 20px;background:#0969da;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500">确认排序</button>';
+  footer.innerHTML = '<button id="toolbarReorderCancel" style="padding:8px 20px;border:1px solid #d0d7de;border-radius:6px;background:#f6f8fa;cursor:pointer;font-size:14px">取消</button><button id="toolbarReorderConfirm" style="padding:8px 20px;background:#477F8A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500">确认排序</button>';
 
   box.appendChild(header);
   box.appendChild(tips);

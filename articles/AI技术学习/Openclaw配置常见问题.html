@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Openclaw配置常见问题</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<article class="markdown-body"><h2>网关报<code>origin not allowed</code></h2>
+<p>目前的配置 <code>&quot;allowedOrigins&quot;: [&quot;http://127.0.0.1:18789&quot;]</code> 明确告诉程序：<strong>只允许本机（127.0.0.1）访问控制面板</strong>。当你用公网 IP 访问时，就被拦截了。</p>
+<pre><code class="language-json">&quot;bind&quot;: &quot;lan&quot;,
+&quot;controlUi&quot;: {
+  &quot;allowedOrigins&quot;: [
+    &quot;http://127.0.0.1:18789&quot;,
+    &quot;http://154.201.92.153:18789&quot; 
+  ],
+</code></pre>
+<p><strong>保存文件</strong>。<br><strong>重启容器</strong>：修改配置后必须重启容器才能生效。</p>
+<ul>
+<li>回到 1Panel 的“容器”列表。</li>
+<li>找到 <code>1Panel-openclaw-...</code> 这个容器。</li>
+<li>点击 <strong>“重启”</strong> 按钮。<br>重启完成后，刷新你的网页，应该就可以正常访问了。</li>
+</ul>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+
+## 网关报`origin not allowed` 
+目前的配置 `"allowedOrigins": ["http://127.0.0.1:18789"]` 明确告诉程序：**只允许本机（127.0.0.1）访问控制面板**。当你用公网 IP 访问时，就被拦截了。
+
+```json
+"bind": "lan",
+"controlUi": {
+  "allowedOrigins": [
+    "http://127.0.0.1:18789",
+    "http://154.201.92.153:18789" 
+  ],
+```
+**保存文件**。
+**重启容器**：修改配置后必须重启容器才能生效。
+- 回到 1Panel 的“容器”列表。
+- 找到 `1Panel-openclaw-...` 这个容器。
+- 点击 **“重启”** 按钮。
+重启完成后，刷新你的网页，应该就可以正常访问了。
+/source-md-->

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { ARTICLES_DIR } = require('../config');
+const { ARTICLES_DIR, SYSTEM_TASKS_DIR } = require('../config');
 const { safePath } = require('../utils/path-utils');
 const { saveSnapshot } = require('./history-service');
 const {
@@ -16,6 +16,54 @@ const {
 const { TODAY_CHROME } = require('./today-chrome');
 const { REMINDER_CHROME } = require('./reminder-chrome');
 
+const TEMPLATE_CHROME = "";
+
+const SYSTEM_REL_PREFIX = '__system__/任务管理/';
+const TODAY_REL = SYSTEM_REL_PREFIX + '今日任务.html';
+const REMINDER_REL = SYSTEM_REL_PREFIX + '提醒事项.html';
+const TEMPLATE_REL = SYSTEM_REL_PREFIX + '每日任务模板.html';
+
+function ensureTaskDir() {
+  fs.mkdirSync(SYSTEM_TASKS_DIR, { recursive: true });
+}
+
+function taskFilePath(name) {
+  ensureTaskDir();
+  return path.join(SYSTEM_TASKS_DIR, name);
+}
+
+function systemTaskRel(name) {
+  return SYSTEM_REL_PREFIX + name;
+}
+
+function migrateLegacyTaskFiles() {
+  ensureTaskDir();
+  const legacyDir = path.join(ARTICLES_DIR, '任务管理');
+  if (!fs.existsSync(legacyDir)) return;
+  ['今日任务.html', '提醒事项.html', '每日任务模板.html'].forEach((name) => {
+    const oldPath = path.join(legacyDir, name);
+    const newPath = taskFilePath(name);
+    if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
+      fs.copyFileSync(oldPath, newPath);
+    }
+  });
+}
+
+function isSystemTaskRel(file) {
+  return String(file || '').replace(/\\/g, '/').startsWith(SYSTEM_REL_PREFIX);
+}
+
+function resolveTaskReadPath(file) {
+  const rel = String(file || '').replace(/\\/g, '/');
+  if (isSystemTaskRel(rel)) return path.join(SYSTEM_TASKS_DIR, rel.slice(SYSTEM_REL_PREFIX.length));
+  return path.resolve(ARTICLES_DIR, rel);
+}
+
+function buildSystemTaskHtml(title, markdown, chromeHtml, relName) {
+  const bodyHtml = mdParse(markdown, { breaks: true, gfm: true });
+  return buildHtml(title, bodyHtml, markdown, chromeHtml, systemTaskRel(relName));
+}
+
 function assertSafe(targetPath) {
   if (!safePath(targetPath, ARTICLES_DIR) && targetPath !== ARTICLES_DIR) {
     const err = new Error('非法路径');
@@ -25,8 +73,9 @@ function assertSafe(targetPath) {
 }
 
 function scanTasks(filterFn) {
+  migrateLegacyTaskFiles();
   const tasks = [];
-  function walk(dir) {
+  function walk(dir, relBase, isSystem) {
     let entries;
     try { entries = fs.readdirSync(dir); } catch { return; }
     for (const entry of entries) {
@@ -34,12 +83,17 @@ function scanTasks(filterFn) {
       const full = path.join(dir, entry);
       let stat;
       try { stat = fs.statSync(full); } catch { continue; }
-      if (stat.isDirectory()) { walk(full); continue; }
+      if (stat.isDirectory()) { walk(full, relBase, isSystem); continue; }
       if (!entry.endsWith('.html') && !entry.endsWith('.md')) continue;
       let content;
       try { content = fs.readFileSync(full, 'utf-8'); } catch { continue; }
       const text = entry.endsWith('.html') ? extractSourceMd(content) : content;
-      for (const line of text.split('\n')) {
+      const relFile = isSystem
+        ? systemTaskRel(path.relative(SYSTEM_TASKS_DIR, full).replace(/\\/g, '/'))
+        : path.relative(ARTICLES_DIR, full).replace(/\\/g, '/');
+      const lines = text.split('\n');
+      for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx];
         if (!/^- \[( |x|X)\] /.test(line)) continue;
         if (!filterFn(line)) continue;
         const done = /\[[xX]\]/.test(line);
@@ -47,28 +101,46 @@ function scanTasks(filterFn) {
         const dateMatch = raw.match(/📅 (\d{4}-\d{2}-\d{2})/);
         const timeMatch = raw.match(/～(\d{2}:\d{2})/);
         const cleanText = raw.replace(/^- \[( |x|X)\] /, '').replace(/<!--.*?-->/g, '').replace(/%%[^%]+%%/g, '').replace(/📅 \d{4}-\d{2}-\d{2}/, '').replace(/～\d{2}:\d{2}/, '').trim();
-        tasks.push({ text: cleanText, due: dateMatch ? dateMatch[1] : null, time: timeMatch ? timeMatch[1] : null, file: path.relative(ARTICLES_DIR, full).replace(/\\/g, '/'), raw, done });
+        tasks.push({
+          text: cleanText,
+          due: dateMatch ? dateMatch[1] : null,
+          time: timeMatch ? timeMatch[1] : null,
+          file: relFile,
+          raw,
+          done,
+          fileMtime: stat.mtimeMs || 0,
+          lineNo: idx
+        });
       }
     }
   }
-  walk(ARTICLES_DIR);
+  walk(ARTICLES_DIR, ARTICLES_DIR, false);
+  walk(SYSTEM_TASKS_DIR, SYSTEM_TASKS_DIR, true);
   return tasks;
 }
 
 function getTodayTasks() { 
+  migrateLegacyTaskFiles();
   const now = new Date();
   const df = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' });
   const parts = df.formatToParts(now);
   const dateStr = parts.find((p) => p.type === 'year').value + '-' + parts.find((p) => p.type === 'month').value + '-' + parts.find((p) => p.type === 'day').value;
   return scanTasks((line) => hasTag(line, '每日任务') && line.includes(dateStr));
 }
-function getOtherTasks() { return scanTasks((line) => !hasTag(line, '每日任务') && !hasTag(line, '提醒事项')); }
+function getOtherTasks() {
+  return scanTasks((line) => !hasTag(line, '每日任务') && !hasTag(line, '提醒事项'))
+    .sort((a, b) => {
+      if ((b.fileMtime || 0) !== (a.fileMtime || 0)) return (b.fileMtime || 0) - (a.fileMtime || 0);
+      return (a.lineNo || 0) - (b.lineNo || 0);
+    });
+}
 function getReminderTasks() { return scanTasks((line) => hasTag(line, '提醒事项')); }
 
 function toggleTask({ file, raw }) {
   if (!file || !raw) { const err = new Error('缺少参数'); err.statusCode = 400; throw err; }
-  const filePath = path.resolve(ARTICLES_DIR, file);
-  assertSafe(filePath);
+  migrateLegacyTaskFiles();
+  const filePath = resolveTaskReadPath(file);
+  if (!isSystemTaskRel(file)) assertSafe(filePath);
   if (!fs.existsSync(filePath)) { const err = new Error('文件不存在'); err.statusCode = 404; throw err; }
   if (file.endsWith('.html')) {
     const html = fs.readFileSync(filePath, 'utf-8');
@@ -83,7 +155,8 @@ function toggleTask({ file, raw }) {
       if (filePath.includes('今日任务')) chromeForTask = TODAY_CHROME;
       else if (filePath.includes('提醒事项')) chromeForTask = REMINDER_CHROME;
     }
-    const newHtml = buildHtml(title, bodyHtml, newMdText, chromeForTask, path.relative(ARTICLES_DIR, filePath).replace(/\\/g, '/'));
+    const rel = isSystemTaskRel(file) ? String(file).replace(/\\/g, '/') : path.relative(ARTICLES_DIR, filePath).replace(/\\/g, '/');
+    const newHtml = buildHtml(title, bodyHtml, newMdText, chromeForTask, rel);
     saveSnapshot(filePath);
     fs.writeFileSync(filePath, newHtml, 'utf-8');
     return { success: true };
@@ -102,11 +175,12 @@ function toggleTask({ file, raw }) {
 
 
 function getTaskTemplate() {
+  migrateLegacyTaskFiles();
   const now = new Date();
   const df = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" });
   const parts = df.formatToParts(now);
   const dateStr = parts.find((p) => p.type === "year").value + "-" + parts.find((p) => p.type === "month").value + "-" + parts.find((p) => p.type === "day").value;
-  const templatePath = path.join(ARTICLES_DIR, "任务管理/每日任务模板.html");
+  const templatePath = taskFilePath("每日任务模板.html");
   const items = [];
   if (fs.existsSync(templatePath)) {
     const html = fs.readFileSync(templatePath, "utf-8");
@@ -121,14 +195,15 @@ function getTaskTemplate() {
 }
 
 function generateTodayTasks() {
+  migrateLegacyTaskFiles();
   const now = new Date();
   const df = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" });
   const parts = df.formatToParts(now);
   const dateStr = parts.find((p) => p.type === "year").value + "-" + parts.find((p) => p.type === "month").value + "-" + parts.find((p) => p.type === "day").value;
   const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
   const weekday = weekdays[new Date(dateStr + 'T12:00:00+08:00').getDay()];
-  const dailyPath = path.join(ARTICLES_DIR, "任务管理/今日任务.html");
-  const templatePath = path.join(ARTICLES_DIR, "任务管理/每日任务模板.html");
+  const dailyPath = taskFilePath("今日任务.html");
+  const templatePath = taskFilePath("每日任务模板.html");
   if (!fs.existsSync(dailyPath)) { const err = new Error("今日任务.html 不存在"); err.statusCode = 404; throw err; }
   if (!fs.existsSync(templatePath)) { const err = new Error("每日任务模板.html 不存在"); err.statusCode = 404; throw err; }
   const templateHtml = fs.readFileSync(templatePath, "utf-8");
@@ -170,7 +245,7 @@ function generateTodayTasks() {
   }
   const title = extractTitle(mdText);
   const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
-  const newHtml = buildHtml(title, bodyHtml, mdText, TODAY_CHROME, path.relative(ARTICLES_DIR, dailyPath).replace(/\\/g, '/'));
+  const newHtml = buildHtml(title, bodyHtml, mdText, TODAY_CHROME, TODAY_REL);
   saveSnapshot(dailyPath);
   fs.writeFileSync(dailyPath, newHtml, "utf-8");
   return { success: true, count: newLines.length, date: dateStr };
@@ -178,7 +253,8 @@ function generateTodayTasks() {
 
 function addTodayTaskItem({ content, date }) {
   if (!content || !date) { const err = new Error('缺少任务内容或日期'); err.statusCode = 400; throw err; }
-  const dailyPath = path.join(ARTICLES_DIR, '任务管理/今日任务.html');
+  migrateLegacyTaskFiles();
+  const dailyPath = taskFilePath('今日任务.html');
   if (!fs.existsSync(dailyPath)) { const err = new Error('今日任务.html 不存在'); err.statusCode = 404; throw err; }
   const html = fs.readFileSync(dailyPath, 'utf-8');
   let mdText = extractSourceMd(html);
@@ -197,14 +273,15 @@ function addTodayTaskItem({ content, date }) {
   else { lines.splice(insertIdx, 0, line); mdText = lines.join('\n'); }
   const title = extractTitle(mdText);
   const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
-  const newHtml = buildHtml(title, bodyHtml, mdText, TODAY_CHROME, path.relative(ARTICLES_DIR, dailyPath).replace(/\\/g, '/')); 
+  const newHtml = buildHtml(title, bodyHtml, mdText, TODAY_CHROME, TODAY_REL); 
   saveSnapshot(dailyPath);
   fs.writeFileSync(dailyPath, newHtml, 'utf-8');
   return { line };
 }
 
 function addReminderItemsFromTemplate() {
-  const remPath = path.join(ARTICLES_DIR, '任务管理/提醒事项.html');
+  migrateLegacyTaskFiles();
+  const remPath = taskFilePath('提醒事项.html');
   if (!fs.existsSync(remPath)) { const err = new Error('提醒事项.html 不存在'); err.statusCode = 404; throw err; }
   const html = fs.readFileSync(remPath, 'utf-8');
   let mdText = extractSourceMd(html);
@@ -215,7 +292,7 @@ function addReminderItemsFromTemplate() {
   mdText += '\n' + newItems.join('\n');
   const title = extractTitle(mdText);
   const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
-  const newHtml = buildHtml(title, bodyHtml, mdText, REMINDER_CHROME, path.relative(ARTICLES_DIR, remPath).replace(/\\/g, '/'));
+  const newHtml = buildHtml(title, bodyHtml, mdText, REMINDER_CHROME, REMINDER_REL);
   saveSnapshot(remPath);
   fs.writeFileSync(remPath, newHtml, 'utf-8');
   return { count: newItems.length };
@@ -223,7 +300,8 @@ function addReminderItemsFromTemplate() {
 
 function addReminderItem({ content, date, time }) {
   if (!content || !date) { const err = new Error('缺少提醒内容或日期'); err.statusCode = 400; throw err; }
-  const remPath = path.join(ARTICLES_DIR, '任务管理/提醒事项.html');
+  migrateLegacyTaskFiles();
+  const remPath = taskFilePath('提醒事项.html');
   if (!fs.existsSync(remPath)) { const err = new Error('提醒事项.html 不存在'); err.statusCode = 404; throw err; }
   const html = fs.readFileSync(remPath, 'utf-8');
   const mdText = extractSourceMd(html);
@@ -238,37 +316,55 @@ function addReminderItem({ content, date, time }) {
   }
   const title = extractTitle(newMdText);
   const bodyHtml = mdParse(newMdText, { breaks: true, gfm: true });
-  const newHtml = buildHtml(title, bodyHtml, newMdText, REMINDER_CHROME, path.relative(ARTICLES_DIR, remPath).replace(/\\/g, '/'));
+  const newHtml = buildHtml(title, bodyHtml, newMdText, REMINDER_CHROME, REMINDER_REL);
   saveSnapshot(remPath);
   fs.writeFileSync(remPath, newHtml, 'utf-8');
   return { line };
 }
 
 function ensureTodayPage() {
-  const dailyPath = path.join(ARTICLES_DIR, '任务管理/今日任务.html');
+  migrateLegacyTaskFiles();
+  const dailyPath = taskFilePath('今日任务.html');
   if (!fs.existsSync(dailyPath)) {
     fs.mkdirSync(path.dirname(dailyPath), { recursive: true });
     const mdText = '# 今日任务\n\n';
-    const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
-    const newHtml = buildHtml('今日任务', bodyHtml, mdText, TODAY_CHROME, '任务管理/今日任务.html');
+    const newHtml = buildSystemTaskHtml('今日任务', mdText, TODAY_CHROME, '今日任务.html');
     fs.writeFileSync(dailyPath, newHtml, 'utf-8');
   }
-  return { success: true, path: '任务管理/今日任务.html' };
+  return { success: true, path: TODAY_REL, url: '/system/tasks/' + encodeURIComponent('今日任务.html') };
 }
 
 function ensureReminderPage() {
-  const remPath = path.join(ARTICLES_DIR, '任务管理/提醒事项.html');
+  migrateLegacyTaskFiles();
+  const remPath = taskFilePath('提醒事项.html');
   if (!fs.existsSync(remPath)) {
     fs.mkdirSync(path.dirname(remPath), { recursive: true });
     const mdText = '# 提醒事项\n\n';
-    const bodyHtml = mdParse(mdText, { breaks: true, gfm: true });
-    const newHtml = buildHtml('提醒事项', bodyHtml, mdText, REMINDER_CHROME, '任务管理/提醒事项.html');
+    const newHtml = buildSystemTaskHtml('提醒事项', mdText, REMINDER_CHROME, '提醒事项.html');
     fs.writeFileSync(remPath, newHtml, 'utf-8');
   }
-  return { success: true, path: '任务管理/提醒事项.html' };
+  return { success: true, path: REMINDER_REL, url: '/system/tasks/' + encodeURIComponent('提醒事项.html') };
+}
+
+function ensureTemplatePage() {
+  migrateLegacyTaskFiles();
+  const templatePath = taskFilePath('每日任务模板.html');
+  fs.mkdirSync(path.dirname(templatePath), { recursive: true });
+  let mdText = '# 每日任务模板\n\n- 示例任务\n';
+  if (fs.existsSync(templatePath)) {
+    try {
+      const existing = fs.readFileSync(templatePath, 'utf-8');
+      const extracted = extractSourceMd(existing).trim();
+      if (extracted) mdText = extracted + '\n';
+    } catch (e) {}
+  }
+  const newHtml = buildSystemTaskHtml('每日任务模板', mdText, TEMPLATE_CHROME, '每日任务模板.html');
+  fs.writeFileSync(templatePath, newHtml, 'utf-8');
+  return { success: true, path: TEMPLATE_REL, url: '/system/tasks/' + encodeURIComponent('每日任务模板.html') };
 }
 
 module.exports = {
+  TEMPLATE_CHROME,
   scanTasks,
   getTodayTasks,
   getOtherTasks,
@@ -281,4 +377,13 @@ module.exports = {
   addReminderItem,
   ensureTodayPage,
   ensureReminderPage,
+  ensureTemplatePage,
+  migrateLegacyTaskFiles,
+  taskFilePath,
+  systemTaskRel,
+  isSystemTaskRel,
+  resolveTaskReadPath,
+  TODAY_REL,
+  REMINDER_REL,
+  TEMPLATE_REL,
 };

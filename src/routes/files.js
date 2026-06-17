@@ -79,6 +79,15 @@ router.post('/move', (req, res) => {
   }
 });
 
+router.post('/move-batch', (req, res) => {
+  try {
+    const result = fileService.movePaths(req.body || {});
+    res.json(result);
+  } catch (e) {
+    res.status(e.statusCode || 500).json({ success: false, error: e.message });
+  }
+});
+
 router.post('/delete', (req, res) => {
   try {
     const result = fileService.deletePath(req.body);

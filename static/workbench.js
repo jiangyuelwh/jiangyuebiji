@@ -2,6 +2,19 @@ var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 var curToday=[],curOther=[],curRem=[],todayFilter='undone',otherFilter='undone',remFilter='undone'
 var todayToggling=false,otherToggling=false,remToggling=false
 var wbScrollLockCount=0
+async function loadWorkbenchTheme(){
+  try{
+    var r=await fetch('/api/settings/public');
+    var d=await r.json();
+    var theme=((d.settings||{}).appearance||{}).theme||'light';
+    document.body.classList.toggle('dark',theme==='dark');
+    try{
+      if(window.parent&&window.parent!==window&&window.parent.document&&window.parent.document.body){
+        window.parent.document.body.classList.toggle('dark',theme==='dark');
+      }
+    }catch(e){}
+  }catch(e){}
+}
 function setWorkbenchScrollLock(locked){
   wbScrollLockCount += locked ? 1 : -1
   if(wbScrollLockCount<0) wbScrollLockCount=0
@@ -16,7 +29,7 @@ function setWorkbenchScrollLock(locked){
 }
 function openTaskFile(file){
   var rel=String(file||'');
-  var url='/articles/'+rel.split('/').map(encodeURIComponent).join('/');
+  var url='/system/tasks/'+encodeURIComponent(rel.split('/').pop()||rel);
   try{
     if(window.parent&&window.parent!==window&&typeof window.parent.openFromWorkbench==='function'){
       var name=rel.split('/').pop()||rel;
@@ -33,12 +46,26 @@ function openTaskFile(file){
       return false;
     }
   }catch(e){}
-  location.href=url;
+  try{
+    if(window.top&&window.top!==window){
+      window.top.location.href='/?view='+encodeURIComponent(rel);
+      return false;
+    }
+  }catch(e){}
+  location.href='/?view='+encodeURIComponent(rel);
   return false;
 }
 
 function escAttr(s){
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatTaskFileLabel(file){
+  var rel=String(file||'').replace(/\\/g,'/');
+  if(rel.indexOf('__system__/任务管理/')===0){
+    return '系统/' + (rel.split('/').pop()||rel);
+  }
+  return rel;
 }
 
 function callParent(fnName){
@@ -58,9 +85,15 @@ async function ensureTaskPage(kind){
 
 function openArticlePath(file){
   var openNav = callParent('navPush');
-  var url='/articles/'+file.split('/').map(encodeURIComponent).join('/');
+  var url='/system/tasks/'+encodeURIComponent(file.split('/').pop()||file);
   if(openNav){ openNav(url); return; }
-  location.href=url;
+  try{
+    if(window.top&&window.top!==window){
+      window.top.location.href='/?view='+encodeURIComponent(file);
+      return;
+    }
+  }catch(e){}
+  location.href='/?view='+encodeURIComponent(file);
 }
 
 function openRootList(){
@@ -128,7 +161,7 @@ function renderClipPreview(data){
     +   '<div>来源：'+esc(data.siteName||'未知来源')+'</div>'
     +   (data.author?'<div>作者：'+esc(data.author)+'</div>':'')
     +   (data.publishedAt?'<div>发布时间：'+esc(data.publishedAt)+'</div>':'')
-    +   '<div style="margin-top:6px;color:#0969da;word-break:break-all">'+esc(data.url||'')+'</div>'
+    +   '<div style="margin-top:6px;color:#477F8A;word-break:break-all">'+esc(data.url||'')+'</div>'
     + '</div>'
     + '<div class="wb-preview-content">'+esc((data.markdown||'').slice(0,3000))+(data.markdown&&data.markdown.length>3000?'\n\n……':'' )+'</div>';
 }
@@ -243,6 +276,7 @@ var syncChannel=new BroadcastChannel('task-sync')
 syncChannel.onmessage=function(e){if(e.data==='refresh'){loadToday();loadOther();loadRem()}}
 
 document.addEventListener('DOMContentLoaded',function(){
+  loadWorkbenchTheme();
   var btnNewNote=document.getElementById('btnNewNote');
   var btnClipArticle=document.getElementById('btnClipArticle');
   var btnTodayTasks=document.getElementById('btnTodayTasks');
@@ -310,7 +344,7 @@ function renderToday(){
   list.forEach(function(t){
     var div=document.createElement('div');div.className='task-row'
     div.dataset.raw64=btoa(encodeURIComponent(t.raw));div.dataset.file=t.file
-    div.innerHTML='<div class="tc'+(t.done?' chk':'')+'"></div><div class="tt'+(t.done?' done':'')+'">'+esc(t.text)+' <a class="tf task-file-link" data-file="'+escAttr(t.file)+'" href="javascript:void(0)">📋'+esc(t.file)+'</a></div>'
+    div.innerHTML='<div class="tc'+(t.done?' chk':'')+'"></div><div class="tt'+(t.done?' done':'')+'">'+esc(t.text)+' <a class="tf task-file-link" data-file="'+escAttr(t.file)+'" href="javascript:void(0)">📋'+esc(formatTaskFileLabel(t.file))+'</a></div>'
     div.addEventListener('click',function(e){
       if(e.target.tagName==='A')return
       var fn={today:toggleToday,other:toggleOther,rem:toggleRem}[this.closest('[id$=List]').id.replace('List','')]
@@ -350,7 +384,7 @@ function renderOther(){
     var due=t.due?'<span class="td">📅 '+t.due+'</span>':''
     var div=document.createElement('div');div.className='task-row'
     div.dataset.raw64=btoa(encodeURIComponent(t.raw));div.dataset.file=t.file
-    div.innerHTML='<div class="tc'+(t.done?' chk':'')+'"></div><div class="tt'+(t.done?' done':'')+'">'+esc(t.text)+' <a class="tf task-file-link" data-file="'+escAttr(t.file)+'" href="javascript:void(0)">📋'+esc(t.file)+'</a></div>'+due
+    div.innerHTML='<div class="tc'+(t.done?' chk':'')+'"></div><div class="tt'+(t.done?' done':'')+'">'+esc(t.text)+' <a class="tf task-file-link" data-file="'+escAttr(t.file)+'" href="javascript:void(0)">📋'+esc(formatTaskFileLabel(t.file))+'</a></div>'+due
     div.addEventListener('click',function(e){
       if(e.target.tagName==='A')return
       var fn={today:toggleToday,other:toggleOther,rem:toggleRem}[this.closest('[id$=List]').id.replace('List','')]
@@ -391,7 +425,7 @@ function renderRem(){
     var due=t.due?'<span class="td">📅 '+(t.time?t.due+' '+t.time:t.due)+'</span>':''
     var div=document.createElement('div');div.className='task-row'
     div.dataset.raw64=btoa(encodeURIComponent(t.raw));div.dataset.file=t.file
-    div.innerHTML='<div class="tc'+(t.done?' chk':'')+'"></div><div class="tt'+(t.done?' done':'')+'">'+esc(t.text)+' <a class="tf task-file-link" data-file="'+escAttr(t.file)+'" href="javascript:void(0)">📋'+esc(t.file)+'</a></div>'+due
+    div.innerHTML='<div class="tc'+(t.done?' chk':'')+'"></div><div class="tt'+(t.done?' done':'')+'">'+esc(t.text)+' <a class="tf task-file-link" data-file="'+escAttr(t.file)+'" href="javascript:void(0)">📋'+esc(formatTaskFileLabel(t.file))+'</a></div>'+due
     div.addEventListener('click',function(e){
       if(e.target.tagName==='A')return
       var fn={today:toggleToday,other:toggleOther,rem:toggleRem}[this.closest('[id$=List]').id.replace('List','')]

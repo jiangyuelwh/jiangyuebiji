@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手机用的多模态模型开源了，1.3B 大小的 MiniCPM-V 4.6 真顶。</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<article class="markdown-body"><hr>
+<h2>title: &quot;手机用的多模态模型开源了，1.3B 大小的 MiniCPM-V 4.6 真顶。&quot;<br>source: &quot;<a href="https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw">https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw</a>&quot;<br>author:<br>  - &quot;<a class="wiki-link" href="javascript:void(0)" onclick="_openWikiLink('AI技术学习/逛逛.html','逛逛')">逛逛</a>&quot;<br>published:<br>created: 2026-05-14<br>description:<br>tags:<br>  - &quot;clippings&quot;</h2>
+<p>逛逛 <em>2026年5月13日 13:51</em></p>
+<p>面壁智能又开源了一个 1B 的多模态模型：MiniCPM-V 4.6，所有手机都能跑。</p>
+<p><strong>这是 MiniCPM-V 系列有史以来参数最小的模型，只有 1.3B。</strong></p>
+<p>但多模态综合能力，打败了阿里的 Qwen3.5-0.8B 和 Google 的 Gemma4-E2B-it。</p>
+<p>参数更小了，能力更强了，速度还更快了。</p>
+<p>先来看看手机上的效果，在自己手机上体验最新的 MiniCPM-V 4.6 模型。</p>
+<p>太快了，挡不住的快。</p>
+<p>我的手机输入框还没缩下去，结果都输出完了。</p>
+<p><video src="https://mpvideo.qpic.cn/0bc3xmfngaakaaagfyyiejvfvo6d2o5qvuya.f10002.mp4?dis_k=4fb7c0abd45c39e13fc19c35f5c36a1a&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=Hc/G0s1/aglx7Zf18n1yEkU7NTMZOW9ONlICJT4KWRQ7JTpFXDUVcwAnMmlRRX4x&amp;auth_key=bdb86d5ec72ebba3134e6725bf15b2b8&amp;vid=wxv_4512554298119290884&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video></p>
+<p><video src="https://mpvideo.qpic.cn/0bc3maagoaaa5aanmoacbzvfaygdm5qaazya.f10002.mp4?dis_k=2c3218154cd6361e557a14ceab001fb7&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=SqP4nO9+ZV0l68ShonUlQhU8YmAaPmgdYFQHdDtYUURsdW0UCTUaJ1QhYT0BTSlh&amp;auth_key=b472b17818093bcccd297c26a634df66&amp;vid=wxv_4512553452396544004&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video></p>
+<p><video src="https://mpvideo.qpic.cn/0bc3yua7waabmqaevdade5vfdrod7pcqd6ya.f10002.mp4?dis_k=923ef1dd385af0fe84cf2c2be8a68297&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=G9roteEsYwol5sX1pXZyExI4ODEcNzxGYF9WdGwPWBE9cjZFXmAccFQsYGkGTn4w&amp;auth_key=11caa0a2becd73bf72f332d071ff643b&amp;vid=wxv_4512553868001460226&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video></p>
+<p><video src="https://mpvideo.qpic.cn/0bc3mqfymaalxaado3ajvnvfwzgdqzsaxbqa.f10002.mp4?dis_k=d8482a490ba001dd621a590d80b021cb&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=Rp7r5/d6Yggk6MOnonEoERRlMDIaPT8cNQJcczFbCEFgcWwRDzYdclUiZjsBSSQy&amp;auth_key=73d8c81e74937408f921d5d0ef94ba58&amp;vid=wxv_4512554854652788738&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video></p>
+<p><video src="https://mpvideo.qpic.cn/0b2eemad4aaa2uai7cycarvfai6dhyrqapqa.f10002.mp4?dis_k=4b009dbfb746c1128be76c19084b08bd&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=GcqSjB4wXXHsyfSmcydCQWQwaB5tPkc1AlAlOVlQETsnbEcLME8nACZsaAVLK2E=&amp;auth_key=52e9f14c2312432f8a11ba7105841d13&amp;vid=wxv_4512555303141294081&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video></p>
+<p>01</p>
+<p><strong>先看成绩</strong></p>
+<p>MiniCPM-V 4.6 提供了两个版本：Instruct（直接回答）和 Thinking（深度推理）。</p>
+<p>下面是两个版本在不同任务下的表现情况。</p>
+<p><figure class="md-asset-image"><img src="https://mmbiz.qpic.cn/mmbiz_png/M2ibDBMdECU0ZWLAlhhxRNxp8WjBnfj5oicM6NP6OfZhc1LKy8fZWUmVnLIeLYo3YJuA5IKpv353qQrNd6qBRgPROWLx9fujXdr2U31lsxGCk/640?wx_fmt=png&amp;from=appmsg&amp;tp=webp&amp;wxfrom=5&amp;wx_lazy=1#imgIndex=1" alt="图片"><figcaption>图片</figcaption></figure></p>
+<p>直接看对比数据。</p>
+<p>综合能力：大部分图文理解任务上，4.6 超过了 Qwen3.5-0.8B 和 Gemma4-E2B-it。不是某一项强，是综合能力强。</p>
+<p>智能密度：4.6 非推理版本运行只消耗 5.4M token，而 Qwen3.5-0.8B 非推理版本要 101M，1/19 的消耗量。</p>
+<p>推理版本差距更大，Qwen3.5-0.8B 推理版消耗 233M token，4.6 只有它的 1/43。</p>
+<p>用 2.5% 的 token 量就超过了 Qwen3.5-0.8B，这个效率差距非常夸张。</p>
+<p><strong>推理效率：</strong></p>
+<p>基于 vLLM 的 token 吞吐量是 Qwen3.5-0.8B 的 <strong>1.5 倍</strong> 。</p>
+<p>单卡吞吐 2624 token/s，每秒处理 14.3 张 1344² 图片（输出 200 token 时），是 Qwen3.5-0.8B 的 1.4 倍。</p>
+<p>同样一张显卡，能承载数倍的线上流量。</p>
+<p><strong>首响延迟（TTFT）：</strong></p>
+<p>处理 3136² 的高清大图，4.6 只需要 75.7ms。</p>
+<p>比 Qwen3.5-0.8B 快 2.2 倍。</p>
+<p>最离谱的是，分辨率从低到高，延迟曲线几乎是平的。分辨率翻倍，延迟几乎不涨。</p>
+<p>02</p>
+<p><strong>为什么这么快</strong></p>
+<p>MiniCPM-V 4.6 的极致效率，来自两项关键的技术创新。</p>
+<p><strong>LLaVA-UHD v4：视觉编码效率翻倍</strong></p>
+<p>处理高清图片的时候，传统方案的算力消耗会随分辨率呈二次方增长。</p>
+<p>图片越大，计算量炸得越快。</p>
+<p>现有的解决方案是在 ViT 之后做 Token 压缩，但这只减轻了下游 LLM 的负担， <strong>视觉编码器内部的计算量一点没少。</strong></p>
+<p>LLaVA-UHD v4 的思路是： <strong>把 Token 压缩前移到 ViT 内部浅层。越早压缩，后面需要处理的 Token 越少，整体计算量就越低。</strong></p>
+<p>但这里有个技术难点。</p>
+<p>ViT 的浅层已经学到了大量视觉表征，直接插入随机初始化的下采样模块，会破坏这些表征，带来高昂的额外训练代价。</p>
+<pre><code class="language-javascript">可以直接看一下论文原文：https://huggingface.co/papers/2605.08985
+</code></pre>
+<p>LLaVA-UHD v4 的解决方案很巧妙：</p>
+<p>在 Token 合并前引入窗口注意力（Window Attention），增强邻近 Token 的上下文交互。</p>
+<p>复用相邻预训练 ViT 层的参数，减小对视觉表征的扰动。</p>
+<p><strong>结果就是视觉编码阶段的浮点运算量降低 55.8%，性能不掉点。</strong> 相比传统 ViT 节约了大约一半的图像编码开销。</p>
+<p><strong>4倍/16倍混合压缩：之前二选一，现在兼得</strong></p>
+<p>视觉 Token 压缩率直接影响到显存占用、首响延迟、推理吞吐和功耗这些关键指标。</p>
+<p>市面上大部分模型只支持 4 倍压缩。</p>
+<p>面壁从 2024 年就开始做 16 倍压缩，但之前只能在 4 倍和 16 倍之间二选一。</p>
+<p><strong>MiniCPM-V 4.6 把这两个都做进去了。</strong></p>
+<p>要精度用 4 倍压缩，要速度用 16 倍压缩。</p>
+<p>一个模型，两种模式。在云端也能以极低成本承接高并发流量。</p>
+<p>16 倍压缩不是噱头，快手已经用在生产环境了。</p>
+<p>快手 2025 年推出的 OneRec 推荐大模型，用 MiniCPM-V-8B 处理视频的字幕、标签、ASR、OCR、封面图等多模态表征， <strong>承接了快手短视频推荐主场景 25% 的请求。</strong></p>
+<p>日活几亿的产品，16 倍压缩扛住了。</p>
+<p>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</p>
+<p>03</p>
+<p><strong>门槛降低了</strong></p>
+<p><strong>1.3B 参数意味着基本上所有个人设备都能跑。手机、电脑、车机、智能家具，不需要高端芯片。</strong></p>
+<p><strong>微调门槛极低。</strong></p>
+<p>RTX 4090 这样的消费级显卡就能全量跑通整个微调流程。独立开发者、高校团队、初创公司，不需要租算力集群就能做垂类定制。</p>
+<p><strong>而且生态全打通：</strong></p>
+<ul>
+<li>微调框架：ms-swift、LLaMA-Factory</li>
+<li>推理部署：vLLM、SGLang、llama.cpp、Ollama<br>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E) ![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</li>
+</ul>
+<p>主流框架全覆盖，不需要自己折腾环境。准备好数据，改几行配置，一键拉起训练。</p>
+<p>端侧部署指南：</p>
+<pre><code class="language-bash">英文：https://github.com/OpenBMB/MiniCPM-V-Apps/blob/main/README.md中文：https://github.com/OpenBMB/MiniCPM-V-Apps/blob/main/README_zh.mddemo：https://huggingface.co/spaces/openbmb/MiniCPM-V-4.6-Demo
+</code></pre>
+<p>看一眼 MiniCPM-V 系列的进化路线：</p>
+<ul>
+<li>MiniCPM-V 2.0：2.8B 参数（2024 年 4 月）</li>
+<li>MiniCPM-V 2.5：8B 参数（2024 年 5 月）</li>
+<li>MiniCPM-V 2.6：8B 参数（2024 年 8 月）</li>
+<li>MiniCPM-V 4.0：4.1B 参数（2025 年 8 月）</li>
+<li>MiniCPM-V 4.5：8B 参数（2025 年 8 月）</li>
+<li>MiniCPM-V 4.6：1.3B 参数（2026 年 5 月）</li>
+</ul>
+<p>不是越做越大，是越做越密。</p>
+<p>面壁在 2024 年提出了「密度定律」，不是模型越大越好，是智能密度越高越好。</p>
+<p>这项研究成果登上了 Nature 子刊。</p>
+<p>MiniCPM-V 4.6 是密度定律的又一次验证：1.3B 的参数，做到了同尺寸最高的智能密度。</p>
+<p>截至 2026 年 3 月，MiniCPM-V 系列在开源社区的累计下载量接近 3000 万次。</p>
+<p>面壁智能从第一天就在走端侧路线。</p>
+<p>模型做小不是为了小，是为了让 AI 落到每一台设备上。</p>
+<pre><code class="language-apache">Hugging Face地址: https://huggingface.co/openbmb/MiniCPM-V-4.6GitHub地址: https://github.com/OpenBMB/MiniCPM-VModelscope地址: https://modelscope.cn/models/OpenBMB/MiniCPM-V-4.6Web Demo地址: https://huggingface.co/spaces/openbmb/MiniCPM-V-4.6-DemoApp Demo地址: https://github.com/OpenBMB/MiniCPM-V-Apps
+</code></pre>
+<p>04</p>
+<p><strong>点击下方卡片，关注逛逛 GitHub</strong></p>
+<p>这个公众号历史发布过很多有趣的开源项目，如果你懒得翻文章一个个找，你直接关注微信公众号：逛逛 GitHub ，后台对话聊天就行了：</p>
+<p>![图片](data:image/svg+xml,%3C%3Fxml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;%3F%3E%3Csvg width=&#39;1px&#39; height=&#39;1px&#39; viewBox=&#39;0 0 1 1&#39; version=&#39;1.1&#39; xmlns=&#39;<a href="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</a>&#39; xmlns:xlink=&#39;<a href="http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg">http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg</a> stroke=&#39;none&#39; stroke-width=&#39;1&#39; fill=&#39;none&#39; fill-rule=&#39;evenodd&#39; fill-opacity=&#39;0&#39;%3E%3Cg transform=&#39;translate(-249.000000, -126.000000)&#39; fill=&#39;%23FFFFFF&#39;%3E%3Crect x=&#39;249&#39; y=&#39;126&#39; width=&#39;1&#39; height=&#39;1&#39;%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)</p>
+<p>逛逛GitHub · 目录</p>
+<p>继续滑动看下一个</p>
+<p>逛逛GitHub</p>
+<p>向上滑动看下一个</p>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+---
+title: "手机用的多模态模型开源了，1.3B 大小的 MiniCPM-V 4.6 真顶。"
+source: "https://mp.weixin.qq.com/s/sRu7eN9CzjXH2V1nuX-ZXw"
+author:
+  - "[[逛逛]]"
+published:
+created: 2026-05-14
+description:
+tags:
+  - "clippings"
+---
+逛逛 *2026年5月13日 13:51*
+
+面壁智能又开源了一个 1B 的多模态模型：MiniCPM-V 4.6，所有手机都能跑。
+
+**这是 MiniCPM-V 系列有史以来参数最小的模型，只有 1.3B。**
+
+但多模态综合能力，打败了阿里的 Qwen3.5-0.8B 和 Google 的 Gemma4-E2B-it。
+
+参数更小了，能力更强了，速度还更快了。
+
+先来看看手机上的效果，在自己手机上体验最新的 MiniCPM-V 4.6 模型。
+
+太快了，挡不住的快。
+
+我的手机输入框还没缩下去，结果都输出完了。
+
+<video src="https://mpvideo.qpic.cn/0bc3xmfngaakaaagfyyiejvfvo6d2o5qvuya.f10002.mp4?dis_k=4fb7c0abd45c39e13fc19c35f5c36a1a&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=Hc/G0s1/aglx7Zf18n1yEkU7NTMZOW9ONlICJT4KWRQ7JTpFXDUVcwAnMmlRRX4x&amp;auth_key=bdb86d5ec72ebba3134e6725bf15b2b8&amp;vid=wxv_4512554298119290884&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video>
+
+<video src="https://mpvideo.qpic.cn/0bc3maagoaaa5aanmoacbzvfaygdm5qaazya.f10002.mp4?dis_k=2c3218154cd6361e557a14ceab001fb7&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=SqP4nO9+ZV0l68ShonUlQhU8YmAaPmgdYFQHdDtYUURsdW0UCTUaJ1QhYT0BTSlh&amp;auth_key=b472b17818093bcccd297c26a634df66&amp;vid=wxv_4512553452396544004&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video>
+
+<video src="https://mpvideo.qpic.cn/0bc3yua7waabmqaevdade5vfdrod7pcqd6ya.f10002.mp4?dis_k=923ef1dd385af0fe84cf2c2be8a68297&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=G9roteEsYwol5sX1pXZyExI4ODEcNzxGYF9WdGwPWBE9cjZFXmAccFQsYGkGTn4w&amp;auth_key=11caa0a2becd73bf72f332d071ff643b&amp;vid=wxv_4512553868001460226&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video>
+
+<video src="https://mpvideo.qpic.cn/0bc3mqfymaalxaado3ajvnvfwzgdqzsaxbqa.f10002.mp4?dis_k=d8482a490ba001dd621a590d80b021cb&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=Rp7r5/d6Yggk6MOnonEoERRlMDIaPT8cNQJcczFbCEFgcWwRDzYdclUiZjsBSSQy&amp;auth_key=73d8c81e74937408f921d5d0ef94ba58&amp;vid=wxv_4512554854652788738&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video>
+
+<video src="https://mpvideo.qpic.cn/0b2eemad4aaa2uai7cycarvfai6dhyrqapqa.f10002.mp4?dis_k=4b009dbfb746c1128be76c19084b08bd&amp;dis_t=1778688135&amp;play_scene=10120&amp;auth_info=GcqSjB4wXXHsyfSmcydCQWQwaB5tPkc1AlAlOVlQETsnbEcLME8nACZsaAVLK2E=&amp;auth_key=52e9f14c2312432f8a11ba7105841d13&amp;vid=wxv_4512555303141294081&amp;format_id=10002&amp;support_redirect=0&amp;mmversion=false" controls="">您的浏览器不支持 video 标签</video>
+
+01
+
+**先看成绩**
+
+MiniCPM-V 4.6 提供了两个版本：Instruct（直接回答）和 Thinking（深度推理）。
+
+下面是两个版本在不同任务下的表现情况。
+
+![图片](https://mmbiz.qpic.cn/mmbiz_png/M2ibDBMdECU0ZWLAlhhxRNxp8WjBnfj5oicM6NP6OfZhc1LKy8fZWUmVnLIeLYo3YJuA5IKpv353qQrNd6qBRgPROWLx9fujXdr2U31lsxGCk/640?wx_fmt=png&from=appmsg&tp=webp&wxfrom=5&wx_lazy=1#imgIndex=1)
+
+直接看对比数据。
+
+综合能力：大部分图文理解任务上，4.6 超过了 Qwen3.5-0.8B 和 Gemma4-E2B-it。不是某一项强，是综合能力强。
+
+智能密度：4.6 非推理版本运行只消耗 5.4M token，而 Qwen3.5-0.8B 非推理版本要 101M，1/19 的消耗量。
+
+推理版本差距更大，Qwen3.5-0.8B 推理版消耗 233M token，4.6 只有它的 1/43。
+
+用 2.5% 的 token 量就超过了 Qwen3.5-0.8B，这个效率差距非常夸张。
+
+**推理效率：**
+
+基于 vLLM 的 token 吞吐量是 Qwen3.5-0.8B 的 **1.5 倍** 。
+
+单卡吞吐 2624 token/s，每秒处理 14.3 张 1344² 图片（输出 200 token 时），是 Qwen3.5-0.8B 的 1.4 倍。
+
+同样一张显卡，能承载数倍的线上流量。
+
+**首响延迟（TTFT）：**
+
+处理 3136² 的高清大图，4.6 只需要 75.7ms。
+
+比 Qwen3.5-0.8B 快 2.2 倍。
+
+最离谱的是，分辨率从低到高，延迟曲线几乎是平的。分辨率翻倍，延迟几乎不涨。
+
+02
+
+**为什么这么快**
+
+MiniCPM-V 4.6 的极致效率，来自两项关键的技术创新。
+
+**LLaVA-UHD v4：视觉编码效率翻倍**
+
+处理高清图片的时候，传统方案的算力消耗会随分辨率呈二次方增长。
+
+图片越大，计算量炸得越快。
+
+现有的解决方案是在 ViT 之后做 Token 压缩，但这只减轻了下游 LLM 的负担， **视觉编码器内部的计算量一点没少。**
+
+LLaVA-UHD v4 的思路是： **把 Token 压缩前移到 ViT 内部浅层。越早压缩，后面需要处理的 Token 越少，整体计算量就越低。**
+
+但这里有个技术难点。
+
+ViT 的浅层已经学到了大量视觉表征，直接插入随机初始化的下采样模块，会破坏这些表征，带来高昂的额外训练代价。
+
+```javascript
+可以直接看一下论文原文：https://huggingface.co/papers/2605.08985
+```
+
+LLaVA-UHD v4 的解决方案很巧妙：
+
+在 Token 合并前引入窗口注意力（Window Attention），增强邻近 Token 的上下文交互。
+
+复用相邻预训练 ViT 层的参数，减小对视觉表征的扰动。
+
+**结果就是视觉编码阶段的浮点运算量降低 55.8%，性能不掉点。** 相比传统 ViT 节约了大约一半的图像编码开销。
+
+**4倍/16倍混合压缩：之前二选一，现在兼得**
+
+视觉 Token 压缩率直接影响到显存占用、首响延迟、推理吞吐和功耗这些关键指标。
+
+市面上大部分模型只支持 4 倍压缩。
+
+面壁从 2024 年就开始做 16 倍压缩，但之前只能在 4 倍和 16 倍之间二选一。
+
+**MiniCPM-V 4.6 把这两个都做进去了。**
+
+要精度用 4 倍压缩，要速度用 16 倍压缩。
+
+一个模型，两种模式。在云端也能以极低成本承接高并发流量。
+
+16 倍压缩不是噱头，快手已经用在生产环境了。
+
+快手 2025 年推出的 OneRec 推荐大模型，用 MiniCPM-V-8B 处理视频的字幕、标签、ASR、OCR、封面图等多模态表征， **承接了快手短视频推荐主场景 25% 的请求。**
+
+日活几亿的产品，16 倍压缩扛住了。
+
+![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)
+
+03
+
+**门槛降低了**
+
+**1.3B 参数意味着基本上所有个人设备都能跑。手机、电脑、车机、智能家具，不需要高端芯片。**
+
+**微调门槛极低。**
+
+RTX 4090 这样的消费级显卡就能全量跑通整个微调流程。独立开发者、高校团队、初创公司，不需要租算力集群就能做垂类定制。
+
+**而且生态全打通：**
+
+- 微调框架：ms-swift、LLaMA-Factory
+- 推理部署：vLLM、SGLang、llama.cpp、Ollama
+![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E) ![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)
+
+主流框架全覆盖，不需要自己折腾环境。准备好数据，改几行配置，一键拉起训练。
+
+端侧部署指南：
+
+```bash
+英文：https://github.com/OpenBMB/MiniCPM-V-Apps/blob/main/README.md中文：https://github.com/OpenBMB/MiniCPM-V-Apps/blob/main/README_zh.mddemo：https://huggingface.co/spaces/openbmb/MiniCPM-V-4.6-Demo
+```
+
+看一眼 MiniCPM-V 系列的进化路线：
+
+- MiniCPM-V 2.0：2.8B 参数（2024 年 4 月）
+- MiniCPM-V 2.5：8B 参数（2024 年 5 月）
+- MiniCPM-V 2.6：8B 参数（2024 年 8 月）
+- MiniCPM-V 4.0：4.1B 参数（2025 年 8 月）
+- MiniCPM-V 4.5：8B 参数（2025 年 8 月）
+- MiniCPM-V 4.6：1.3B 参数（2026 年 5 月）
+
+不是越做越大，是越做越密。
+
+面壁在 2024 年提出了「密度定律」，不是模型越大越好，是智能密度越高越好。
+
+这项研究成果登上了 Nature 子刊。
+
+MiniCPM-V 4.6 是密度定律的又一次验证：1.3B 的参数，做到了同尺寸最高的智能密度。
+
+截至 2026 年 3 月，MiniCPM-V 系列在开源社区的累计下载量接近 3000 万次。
+
+面壁智能从第一天就在走端侧路线。
+
+模型做小不是为了小，是为了让 AI 落到每一台设备上。
+
+```apache
+Hugging Face地址: https://huggingface.co/openbmb/MiniCPM-V-4.6GitHub地址: https://github.com/OpenBMB/MiniCPM-VModelscope地址: https://modelscope.cn/models/OpenBMB/MiniCPM-V-4.6Web Demo地址: https://huggingface.co/spaces/openbmb/MiniCPM-V-4.6-DemoApp Demo地址: https://github.com/OpenBMB/MiniCPM-V-Apps
+```
+
+04
+
+**点击下方卡片，关注逛逛 GitHub**
+
+这个公众号历史发布过很多有趣的开源项目，如果你懒得翻文章一个个找，你直接关注微信公众号：逛逛 GitHub ，后台对话聊天就行了：
+
+![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)
+
+逛逛GitHub · 目录
+
+继续滑动看下一个
+
+逛逛GitHub
+
+向上滑动看下一个
+/source-md-->

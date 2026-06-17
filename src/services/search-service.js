@@ -13,6 +13,7 @@ function searchFiles(q = '') {
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const entry of entries) {
       if (entry.name.startsWith('.')) continue;
+      if (!prefix && entry.name === '任务管理') continue;
       const full = path.join(dir, entry.name);
       const rel = prefix ? prefix + '/' + entry.name : entry.name;
 

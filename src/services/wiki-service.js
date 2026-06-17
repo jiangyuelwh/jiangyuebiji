@@ -108,6 +108,73 @@ function renderBacklinksHtml(currentRelPath, backlinksMap) {
   return '<section style="margin-top:32px;padding:16px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.04)"><h3 style="margin:0 0 12px;font-size:17px;color:#334155">反向链接</h3><ul style="margin:0;padding-left:20px">' + items + '</ul></section>';
 }
 
+function analyzeWikiLinks(extractSourceMd) {
+  const files = scanAllArticles();
+  const existing = new Set(files.map(f => normalizeArticlePath(f.rel)));
+  const basenameMap = new Map();
+  files.forEach(file => {
+    const base = path.basename(file.rel).toLowerCase();
+    if (!basenameMap.has(base)) basenameMap.set(base, []);
+    basenameMap.get(base).push(normalizeArticlePath(file.rel));
+  });
+  const issues = [];
+  for (const file of files) {
+    let html = '';
+    try { html = fs.readFileSync(file.full, 'utf8'); } catch { continue; }
+    const md = extractSourceMd(html);
+    const re = /\[\[([^\]]+)\]\]/g;
+    let m;
+    while ((m = re.exec(String(md || '')))) {
+      const raw = String(m[1] || '').trim();
+      const normalizedRaw = raw.replace(/\\/g, '/');
+      const resolved = normalizeArticlePath(resolveWikiTarget(raw, file.rel));
+      if (existing.has(resolved)) continue;
+      const filename = (normalizedRaw.endsWith('.html') ? path.basename(normalizedRaw) : path.basename(normalizedRaw + '.html')).toLowerCase();
+      const candidates = basenameMap.get(filename) || [];
+      issues.push({
+        source: normalizeArticlePath(file.rel),
+        raw,
+        resolved,
+        status: candidates.length === 1 ? 'repairable' : 'missing',
+        candidate: candidates.length === 1 ? candidates[0] : '',
+        candidates,
+      });
+    }
+  }
+  return {
+    total: issues.length,
+    repairable: issues.filter(x => x.status === 'repairable').length,
+    missing: issues.filter(x => x.status === 'missing').length,
+    issues,
+  };
+}
+
+function repairWikiLinks(extractSourceMd, saveMarkdownFile) {
+  const report = analyzeWikiLinks(extractSourceMd);
+  const grouped = new Map();
+  report.issues.filter(x => x.status === 'repairable' && x.candidate).forEach(item => {
+    if (!grouped.has(item.source)) grouped.set(item.source, []);
+    grouped.get(item.source).push(item);
+  });
+  let fixed = 0;
+  for (const [source, items] of grouped.entries()) {
+    let html = '';
+    try { html = fs.readFileSync(path.join(ARTICLES_DIR, source), 'utf8'); } catch { continue; }
+    let md = extractSourceMd(html);
+    items.forEach(item => {
+      const escaped = item.raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      md = md.replace(new RegExp('\\[\\[' + escaped + '\\]\\]', 'g'), '[[' + item.candidate + ']]');
+      fixed += 1;
+    });
+    saveMarkdownFile(source, md);
+  }
+  return {
+    success: true,
+    fixed,
+    report: analyzeWikiLinks(extractSourceMd),
+  };
+}
+
 module.exports = {
   normalizeArticlePath,
   resolveWikiTarget,
@@ -116,4 +183,6 @@ module.exports = {
   buildBacklinksMap,
   renderWikiLinksHtml,
   renderBacklinksHtml,
+  analyzeWikiLinks,
+  repairWikiLinks,
 };

@@ -3,7 +3,9 @@ const path = require('path');
 
 const { ARTICLES_DIR, FUJIAN_DIR } = require('../config');
 const { fileCache, dirCache } = require('./cache-service');
-const { moveToRecycleBin } = require('./recycle-service');
+const { moveToRecycleBin, moveAssetToRecycleBin } = require('./recycle-service');
+const { analyzeWikiLinks, repairWikiLinks } = require('./wiki-service');
+const { RECYCLE_BIN_DIR } = require('../config');
 const {
   mdParse,
   buildHtml,
@@ -16,6 +18,8 @@ const { saveSnapshot } = require('./history-service');
 const { TODAY_CHROME } = require('./today-chrome');
 const { REMINDER_CHROME } = require('./reminder-chrome');
 const { safePath } = require('../utils/path-utils');
+const { getAssetDirForArticleRel, normalizeArticleOrDirAssetLinks } = require('./asset-link-service');
+const { isSystemTaskRel, resolveTaskReadPath, migrateLegacyTaskFiles, TEMPLATE_CHROME } = require('./task-service');
 
 function rebuildAllArticles() {
   function walk(dir, out = []) {
@@ -45,6 +49,7 @@ function rebuildAllArticles() {
       if (!chromeHtml) {
         if (relPath.includes('今日任务')) chromeHtml = TODAY_CHROME;
         else if (relPath.includes('提醒事项')) chromeHtml = REMINDER_CHROME;
+        else if (relPath.includes('每日任务模板')) chromeHtml = TEMPLATE_CHROME;
       }
       const rebuilt = buildHtml(title, bodyHtml, markdown, chromeHtml, relPath);
       fs.writeFileSync(filePath, rebuilt, 'utf-8');
@@ -52,10 +57,6 @@ function rebuildAllArticles() {
   }
   fileCache.clear();
   dirCache.clear();
-}
-
-function getAssetDirForArticleRel(relPath) {
-  return path.join(FUJIAN_DIR, ...String(relPath || '').replace(/\\/g, '/').replace(/\.html$/i, '').split('/').filter(Boolean));
 }
 
 function assertSafe(targetPath) {
@@ -73,7 +74,7 @@ function scanTree(dirPath = ARTICLES_DIR) {
   let entries = [];
   try { entries = fs.readdirSync(dirPath, { withFileTypes: true }); } catch { return []; }
 
-  const tree = entries.filter((e) => !e.name.startsWith('.') && e.isDirectory()).map((entry) => {
+  const tree = entries.filter((e) => !e.name.startsWith('.') && e.isDirectory() && !(dirPath === ARTICLES_DIR && e.name === '任务管理')).map((entry) => {
     const fullPath = path.join(dirPath, entry.name);
     const relPath = path.relative(ARTICLES_DIR, fullPath).replace(/\\/g, '/');
     const sub = fs.readdirSync(fullPath); const hasFiles = sub.some(function(e){return !e.startsWith('.') && !fs.statSync(path.join(fullPath,e)).isDirectory()}); return { type: 'dir', name: entry.name, path: relPath, children: scanTree(fullPath), hasFiles: hasFiles };
@@ -94,7 +95,7 @@ function listDir(relDir = '') {
   let entries = [];
   try { entries = fs.readdirSync(dirPath, { withFileTypes: true }); } catch { return []; }
 
-  const items = entries.filter((e) => !e.name.startsWith('.') && e.name !== 'renwu.html').map((entry) => {
+  const items = entries.filter((e) => !e.name.startsWith('.') && e.name !== 'renwu.html' && e.name !== 'system_pages' && !(dirPath === ARTICLES_DIR && e.name === '任务管理')).map((entry) => {
     const fullPath = path.join(dirPath, entry.name);
     const relPath = path.relative(ARTICLES_DIR, fullPath).replace(/\\/g, '/');
     const stat = fs.statSync(fullPath);
@@ -110,8 +111,10 @@ function listDir(relDir = '') {
 function readFileMarkdown(relPath) {
   if (!relPath) { const err = new Error('缺少 path'); err.statusCode = 400; throw err; }
   if (String(relPath).replace(/\\/g, '/') === 'renwu.html') { const err = new Error('系统页面不可编辑'); err.statusCode = 403; throw err; }
-  const filePath = path.resolve(ARTICLES_DIR, relPath);
-  assertSafe(filePath);
+  migrateLegacyTaskFiles();
+  const isSystem = isSystemTaskRel(relPath);
+  const filePath = isSystem ? resolveTaskReadPath(relPath) : path.resolve(ARTICLES_DIR, relPath);
+  if (!isSystem) assertSafe(filePath);
   if (!fs.existsSync(filePath)) { const err = new Error('文件不存在'); err.statusCode = 404; throw err; }
   const cacheKey = 'read:' + relPath;
   const cached = fileCache.get(cacheKey);
@@ -129,22 +132,36 @@ function readFileMarkdown(relPath) {
 function saveMarkdownFile(relPath, markdown) {
   if (!relPath || typeof markdown !== 'string') { const err = new Error('缺少参数'); err.statusCode = 400; throw err; }
   if (String(relPath).replace(/\\/g, '/') === 'renwu.html') { const err = new Error('系统页面不可编辑'); err.statusCode = 403; throw err; }
-  const filePath = path.resolve(ARTICLES_DIR, relPath);
-  assertSafe(filePath);
+  migrateLegacyTaskFiles();
+  const isSystem = isSystemTaskRel(relPath);
+  const filePath = isSystem ? resolveTaskReadPath(relPath) : path.resolve(ARTICLES_DIR, relPath);
+  if (!isSystem) assertSafe(filePath);
   saveSnapshot(filePath);
   const title = path.basename(relPath || '', '.html');
   const bodyHtml = mdParse(markdown, { breaks: true, gfm: true });
     // Preserve chrome from existing file if present
   var chromeHtml = "";
-  try { const existing = fs.readFileSync(filePath, "utf-8"); const m = existing.match(/<article class="markdown-body">([sS]*?)<h1>/); if (m && (m[1].includes("addTaskBtn") || m[1].includes("addRemBtn") || m[1].includes("addTaskModal") || m[1].includes("addRemModal"))) { chromeHtml = m[1]; } } catch(e) {}
+  try {
+    const existing = fs.readFileSync(filePath, "utf-8");
+    const m = existing.match(/<article class="markdown-body">([\s\S]*?)<h1>/);
+    if (
+      m &&
+      !relPath.includes("每日任务模板") &&
+      !relPath.includes("今日任务") &&
+      (m[1].includes("addTaskBtn") || m[1].includes("addRemBtn") || m[1].includes("addTaskModal") || m[1].includes("addRemModal") || m[1].includes("openTemplateBtn") || m[1].includes("openTodayBtn"))
+    ) {
+      chromeHtml = m[1];
+    }
+  } catch(e) {}
   if (!chromeHtml) {
     if (relPath.includes("今日任务")) chromeHtml = TODAY_CHROME;
     else if (relPath.includes("提醒事项")) chromeHtml = REMINDER_CHROME;
+    else if (relPath.includes("每日任务模板")) chromeHtml = TEMPLATE_CHROME;
   }
   const html = buildHtml(title, bodyHtml, markdown, chromeHtml, relPath);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, html, 'utf-8');
-  rebuildAllArticles();
+  if (!isSystem) rebuildAllArticles();
   fileCache.del('read:' + relPath);
   fileCache.delPrefix('list:');
   dirCache.clear();
@@ -154,6 +171,11 @@ function saveMarkdownFile(relPath, markdown) {
 function createFile({ name, dir = '', content = '' }) {
   if (!name) { const err = new Error('缺少文件名'); err.statusCode = 400; throw err; }
   if (!name.endsWith('.html')) name += '.html';
+  if (String(dir || '').replace(/\\/g, '/').startsWith('__system__/')) {
+    const err = new Error('系统目录不可新建文件');
+    err.statusCode = 403;
+    throw err;
+  }
   const dirPath = path.resolve(ARTICLES_DIR, dir);
   assertSafe(dirPath);
   const filePath = path.join(dirPath, name);
@@ -173,6 +195,7 @@ function createFile({ name, dir = '', content = '' }) {
 
 function createDir({ name, dir = '' }) {
   if (!name) { const err = new Error('缺少目录名'); err.statusCode = 400; throw err; }
+  if (String(dir || '').replace(/\\/g, '/').startsWith('__system__/')) { const err = new Error('系统目录不可新建文件夹'); err.statusCode = 403; throw err; }
   const parentDir = path.resolve(ARTICLES_DIR, dir);
   assertSafe(parentDir);
   const newDir = path.join(parentDir, name);
@@ -186,10 +209,12 @@ function createDir({ name, dir = '' }) {
 function renamePath({ path: relPath, newName }) {
   if (!relPath || !newName) { const err = new Error('缺少参数'); err.statusCode = 400; throw err; }
   if (String(relPath).replace(/\\/g, '/') === 'renwu.html') { const err = new Error('系统页面不可重命名'); err.statusCode = 403; throw err; }
+  if (String(relPath || '').replace(/\\/g, '/').startsWith('__system__/')) { const err = new Error('系统页面不可重命名'); err.statusCode = 403; throw err; }
   const oldPath = path.resolve(ARTICLES_DIR, relPath);
   assertSafe(oldPath);
   const newPath = path.join(path.dirname(oldPath), newName);
   assertSafe(newPath);
+  const isDir = fs.existsSync(oldPath) && fs.statSync(oldPath).isDirectory();
   fs.renameSync(oldPath, newPath);
   try {
     const oldAssetDir = getAssetDirForArticleRel(relPath);
@@ -200,6 +225,7 @@ function renamePath({ path: relPath, newName }) {
       fs.renameSync(oldAssetDir, newAssetDir);
     }
   } catch {}
+  try { normalizeArticleOrDirAssetLinks(newPath); } catch {}
   rebuildAllArticles();
   fileCache.clear();
   dirCache.clear();
@@ -209,6 +235,7 @@ function renamePath({ path: relPath, newName }) {
 function movePath({ path: relPath, targetDir = '' }) {
   if (!relPath) { const err = new Error('缺少 path'); err.statusCode = 400; throw err; }
   if (String(relPath).replace(/\\/g, '/') === 'renwu.html') { const err = new Error('系统页面不可移动'); err.statusCode = 403; throw err; }
+  if (String(relPath || '').replace(/\\/g, '/').startsWith('__system__/')) { const err = new Error('系统页面不可移动'); err.statusCode = 403; throw err; }
   const oldPath = path.resolve(ARTICLES_DIR, relPath);
   const targetDirPath = path.resolve(ARTICLES_DIR, targetDir);
   assertSafe(oldPath);
@@ -225,15 +252,30 @@ function movePath({ path: relPath, targetDir = '' }) {
       fs.renameSync(oldAssetDir, newAssetDir);
     }
   } catch {}
+  try { normalizeArticleOrDirAssetLinks(newPath); } catch {}
   rebuildAllArticles();
   fileCache.clear();
   dirCache.clear();
   return { success: true };
 }
 
+function movePaths({ items = [], targetDir = '' }) {
+  if (!Array.isArray(items) || !items.length) {
+    const err = new Error('缺少 items');
+    err.statusCode = 400;
+    throw err;
+  }
+  const results = [];
+  for (const item of items) {
+    results.push(movePath({ path: item.path, targetDir }));
+  }
+  return { success: true, moved: results.length };
+}
+
 function deletePath({ path: relPath, isDir }) {
   if (!relPath) { const err = new Error('缺少 path'); err.statusCode = 400; throw err; }
   if (String(relPath).replace(/\\/g, '/') === 'renwu.html') { const err = new Error('系统页面不可删除'); err.statusCode = 403; throw err; }
+  if (String(relPath || '').replace(/\\/g, '/').startsWith('__system__/')) { const err = new Error('系统页面不可删除'); err.statusCode = 403; throw err; }
   const targetPath = path.resolve(ARTICLES_DIR, relPath);
   assertSafe(targetPath);
   if (!fs.existsSync(targetPath)) { const err = new Error('文件不存在'); err.statusCode = 404; throw err; }
@@ -281,6 +323,68 @@ function renderMarkdownFile(relPath) {
   return { html };
 }
 
+function scanWikiLinkIssues() {
+  return analyzeWikiLinks(extractSourceMd);
+}
+
+function repairWikiLinkIssues() {
+  return repairWikiLinks(extractSourceMd, saveMarkdownFile);
+}
+
+function scanUnusedAssets() {
+  const referenced = new Set();
+  const assetFiles = [];
+  function walk(dir, out = []) {
+    let entries = [];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full, out);
+      else out.push(full);
+    }
+    return out;
+  }
+  walk(FUJIAN_DIR, assetFiles);
+  const articleFiles = [];
+  walk(ARTICLES_DIR, articleFiles);
+  articleFiles.filter(f => /\.html$/i.test(f)).forEach(file => {
+    let html = '';
+    try { html = fs.readFileSync(file, 'utf8'); } catch { return; }
+    const md = extractSourceMd(ensureSourceMd(html));
+    const re = /(?:!\[[^\]]*\]|\[[^\]]*\])\((\/fujian\/[^)\s]+)(?:\s+"[^"]*")?\)/g;
+    let m;
+    while ((m = re.exec(md))) {
+      const webPath = decodeURIComponent(m[1]);
+      const rel = webPath.replace(/^\/fujian\//, '').replace(/\//g, path.sep);
+      referenced.add(path.resolve(FUJIAN_DIR, rel));
+    }
+  });
+  const unused = assetFiles.filter(full => !referenced.has(path.resolve(full)));
+  return {
+    success: true,
+    totalAssets: assetFiles.length,
+    referencedAssets: referenced.size,
+    unusedCount: unused.length,
+    unused: unused.map(full => ({
+      fullPath: full,
+      relativePath: path.relative(FUJIAN_DIR, full).replace(/\\/g, '/'),
+    })),
+  };
+}
+
+function cleanupUnusedAssets() {
+  const report = scanUnusedAssets();
+  let moved = 0;
+  report.unused.forEach(item => {
+    try {
+      moveAssetToRecycleBin(item.relativePath);
+      moved += 1;
+    } catch {}
+  });
+  return { success: true, moved, report: scanUnusedAssets() };
+}
+
 module.exports = {
   rebuildAllArticles,
   scanTree,
@@ -291,7 +395,12 @@ module.exports = {
   createDir,
   renamePath,
   movePath,
+  movePaths,
   deletePath,
   uploadFiles,
   renderMarkdownFile,
+  scanWikiLinkIssues,
+  repairWikiLinkIssues,
+  scanUnusedAssets,
+  cleanupUnusedAssets,
 };

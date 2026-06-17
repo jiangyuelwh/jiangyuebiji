@@ -8,6 +8,8 @@ const SNAPSHOTS_DIR = path.join(BASE_DIR, 'snapshots');
 const HISTORY_DIR = path.join(BASE_DIR, '.history');
 const TEMPLATES_DIR = path.join(BASE_DIR, 'templates');
 const STATIC_DIR = path.join(BASE_DIR, 'static');
+const SYSTEM_PAGES_DIR = path.join(BASE_DIR, 'system_pages');
+const SYSTEM_TASKS_DIR = path.join(SYSTEM_PAGES_DIR, '任务管理');
 
 const PORT = process.argv[2] || 8765;
 
@@ -26,6 +28,8 @@ module.exports = {
   HISTORY_DIR,
   TEMPLATES_DIR,
   STATIC_DIR,
+  SYSTEM_PAGES_DIR,
+  SYSTEM_TASKS_DIR,
   PORT,
   FILE_CACHE_MAX,
   FILE_CACHE_TTL,

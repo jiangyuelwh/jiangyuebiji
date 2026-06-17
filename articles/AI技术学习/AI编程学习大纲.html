@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI编程学习大纲</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<article class="markdown-body"><h1>🧠 AI 编程学习大纲（零基础 · 实战导向）</h1>
+<blockquote>
+<p><strong>核心理念：</strong> 先学会用 AI 造轮子，再理解轮子怎么造。<br><strong>学习周期：</strong> 约 6-8 周，每天 1-2 小时。</p>
+</blockquote>
+<hr>
+<h2>📅 第一阶段：环境搭建与工具链（第 1 周）</h2>
+<p><strong>目标：</strong> 搭好 AI 编程的工作流，别在安装软件上卡住。</p>
+<h3>1.1 安装核心工具</h3>
+<ul>
+<li><strong>Python 环境：</strong> 安装 Anaconda 或 Miniconda（省去环境配置烦恼）</li>
+<li><strong>代码编辑器：</strong> 安装 VS Code，并熟悉基本操作</li>
+<li><strong>AI 编程助手（任选其一）：</strong><ul>
+<li>国内推荐：通义灵码（阿里云，VS Code 插件）、文心快码</li>
+<li>国际推荐：GitHub Copilot、Cursor 编辑器</li>
+</ul>
+</li>
+<li><strong>虚拟环境：</strong> 学会 <code>conda create</code> 和 <code>pip install</code>，养成隔离环境的习惯</li>
+</ul>
+<h3>1.2 必学 Python 基础速览</h3>
+<ul>
+<li>变量、数据类型、条件判断、循环</li>
+<li>列表与字典的核心操作</li>
+<li>函数定义与调用</li>
+<li><strong>关键技能：</strong> 学会在 VS Code 里用 AI 助手自动补全和解释代码</li>
+</ul>
+<h3>✅ 阶段作业</h3>
+<ul>
+<li>用 AI 助手在 VS Code 里写一个“学生成绩管理”小脚本，能增删查改。</li>
+</ul>
+<hr>
+<h2>📅 第二阶段：开启 AI 对话编程（第 2 周）</h2>
+<p><strong>目标：</strong> 掌握与 AI 协作写代码的语法——提示词工程。</p>
+<h3>2.1 提示词框架</h3>
+<ul>
+<li><strong>角色扮演：</strong> “你是一名资深 Python 工程师……”</li>
+<li><strong>分步拆解：</strong> 学会把大问题拆成 AI 能一口吃下的小问题</li>
+<li><strong>喂示例（Few-Shot）：</strong> 给 AI 一两个例子，让它模仿</li>
+<li><strong>框架推荐：</strong> CRISPE 框架（角色-背景-意图-风格-期望）</li>
+</ul>
+<h3>2.2 实战演练</h3>
+<ul>
+<li>用对话让 AI 帮你写爬虫（如抓取天气）</li>
+<li>让 AI 帮你写 Python 小游戏（贪吃蛇、2048）</li>
+<li><strong>核心技巧：</strong> 报错时，直接把错误信息丢给 AI，学习它如何修复</li>
+</ul>
+<h3>✅ 阶段作业</h3>
+<ul>
+<li>全程不手写代码，用对话让 AI 生成一个带界面的“待办事项”小工具。</li>
+</ul>
+<hr>
+<h2>📅 第三阶段：机器学习速通（第 3-5 周）</h2>
+<p><strong>目标：</strong> 理解 AI 的底层逻辑，学会用最经典的库。</p>
+<h3>3.1 理论直觉课</h3>
+<ul>
+<li><strong>机器学习是什么：</strong> 从数据中找规律</li>
+<li><strong>三大任务：</strong> 分类（找猫狗）、回归（测房价）、聚类（分用户群）</li>
+<li><strong>炼金术心态：</strong> 数据是原料，模型是丹炉，调参是火候——先别钻数学公式！</li>
+</ul>
+<h3>3.2 核心库入门</h3>
+<ul>
+<li><strong>NumPy：</strong> 数据计算的基石（理解数组）</li>
+<li><strong>Pandas：</strong> 清洗表格数据的神器（读 CSV、处理缺失值）</li>
+<li><strong>Matplotlib/Seaborn：</strong> 画图看趋势（直方图、散点图）</li>
+</ul>
+<h3>3.3 经典模型实战</h3>
+<ul>
+<li><strong>Scikit-learn：</strong> 用 5 行代码跑起线性回归、决策树</li>
+<li><strong>完整流程：</strong> 加载数据 → 清洗 → 切分训练/测试集 → 训练 → 评估准确率</li>
+<li><strong>跟着做：</strong> Kaggle 的“泰坦尼克号幸存者预测”项目——AI 小白必刷课</li>
+</ul>
+<h3>✅ 阶段作业</h3>
+<ul>
+<li>找一个你感兴趣的 Excel/CSV 数据集，用 Sklearn 建模预测，并画图展示结果。</li>
+</ul>
+<hr>
+<h2>📅 第四阶段：深度学习入门（第 6-7 周）</h2>
+<p><strong>目标：</strong> 用最友好的方式，碰一碰神经网络。</p>
+<h3>4.1 框架选择</h3>
+<ul>
+<li>新手首选 <strong>PyTorch</strong>（比 TensorFlow 更 Pythonic，社区活跃）</li>
+<li>了解张量是什么、GPU 加速是咋回事</li>
+</ul>
+<h3>4.2 图像识别入门</h3>
+<ul>
+<li><strong>hello world 项目：</strong> MNIST 手写数字识别（AI 界的“新手村”）</li>
+<li><strong>必学概念：</strong> 卷积神经网络直觉理解（扫描、提取特征）</li>
+<li><strong>进阶可选：</strong> 用预训练模型 ResNet 做图片分类（站在巨人肩膀上）</li>
+</ul>
+<h3>4.3 免费算力</h3>
+<ul>
+<li>注册 Kaggle Notebook 或 Google Colab，用云 GPU 跑模型</li>
+</ul>
+<h3>✅ 阶段作业</h3>
+<ul>
+<li>用 PyTorch 在 Colab 上训练一个 MNIST 模型，识别自己手写的数字照片。</li>
+</ul>
+<hr>
+<h2>📅 第五阶段：调用大语言模型 API（第 8 周）</h2>
+<p><strong>目标：</strong> 开发真正的 AI 应用，接触 RAG 和智能体。</p>
+<h3>5.1 API 调用</h3>
+<ul>
+<li>获取 DeepSeek / 通义千问 / OpenAI 的 API Key</li>
+<li>Python 发送请求，拿到回复</li>
+<li><strong>项目：</strong> 做一个命令行“AI 翻译官”</li>
+</ul>
+<h3>5.2 进阶应用（概念了解）</h3>
+<ul>
+<li><strong>RAG（检索增强生成）：</strong> 让 AI 读你的本地文件再回答（个人知识库）</li>
+<li><strong>Agent（智能体）：</strong> 让 AI 能自动调用搜索、计算器等工具</li>
+<li><strong>LangChain / LlamaIndex：</strong> 了解这两个主流框架的名字和用途</li>
+</ul>
+<h3>✅ 阶段作业</h3>
+<ul>
+<li>做一个“AI 每日新闻简报生成器”，调用模型总结指定话题的最新信息。</li>
+</ul>
+<hr>
+<h2>🧰 小白救急指南（遇到问题怎么办）</h2>
+<ol>
+<li><strong>先问 AI：</strong> 把报错原样丢给 ChatGPT/Kimi/DeepSeek，90% 能解决。</li>
+<li><strong>再查文档：</strong> 官网 Tutorial 永远是第一手资料。</li>
+<li><strong>GitHub Issues：</strong> 搜错误关键词，常有人踩过坑。</li>
+<li><strong>心态管理：</strong> 环境报错比算法还玄学，卡住 3 天很正常，先跳过也行。</li>
+</ol>
+<hr>
+<h2>📚 持续学习资源</h2>
+<ul>
+<li><strong>刷题：</strong> Kaggle Learn 系列免费短课</li>
+<li><strong>跟项目：</strong> 去 B 站搜“5 个 Python AI 实战项目”</li>
+<li><strong>读代码：</strong> GitHub 搜 <code>awesome-ai-project</code>，多读别人的玩具代码</li>
+<li><strong>推荐书籍（按需）：</strong><ul>
+<li>《Python编程：从入门到实践》（工具书）</li>
+<li>《机器学习实战》（基于 Sklearn）</li>
+<li>《动手学深度学习》（李沐，在线免费）</li>
+</ul>
+</li>
+</ul>
+<p><a href="https://mp.weixin.qq.com/s/13_NsmAD6iRkXfoqfBb6_A">https://mp.weixin.qq.com/s/13_NsmAD6iRkXfoqfBb6_A</a></p>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+# 🧠 AI 编程学习大纲（零基础 · 实战导向）
+
+> **核心理念：** 先学会用 AI 造轮子，再理解轮子怎么造。
+> **学习周期：** 约 6-8 周，每天 1-2 小时。
+
+---
+
+## 📅 第一阶段：环境搭建与工具链（第 1 周）
+**目标：** 搭好 AI 编程的工作流，别在安装软件上卡住。
+
+### 1.1 安装核心工具
+- **Python 环境：** 安装 Anaconda 或 Miniconda（省去环境配置烦恼）
+- **代码编辑器：** 安装 VS Code，并熟悉基本操作
+- **AI 编程助手（任选其一）：**
+  - 国内推荐：通义灵码（阿里云，VS Code 插件）、文心快码
+  - 国际推荐：GitHub Copilot、Cursor 编辑器
+- **虚拟环境：** 学会 `conda create` 和 `pip install`，养成隔离环境的习惯
+
+### 1.2 必学 Python 基础速览
+- 变量、数据类型、条件判断、循环
+- 列表与字典的核心操作
+- 函数定义与调用
+- **关键技能：** 学会在 VS Code 里用 AI 助手自动补全和解释代码
+
+### ✅ 阶段作业
+- 用 AI 助手在 VS Code 里写一个“学生成绩管理”小脚本，能增删查改。
+
+---
+
+## 📅 第二阶段：开启 AI 对话编程（第 2 周）
+**目标：** 掌握与 AI 协作写代码的语法——提示词工程。
+
+### 2.1 提示词框架
+- **角色扮演：** “你是一名资深 Python 工程师……”
+- **分步拆解：** 学会把大问题拆成 AI 能一口吃下的小问题
+- **喂示例（Few-Shot）：** 给 AI 一两个例子，让它模仿
+- **框架推荐：** CRISPE 框架（角色-背景-意图-风格-期望）
+
+### 2.2 实战演练
+- 用对话让 AI 帮你写爬虫（如抓取天气）
+- 让 AI 帮你写 Python 小游戏（贪吃蛇、2048）
+- **核心技巧：** 报错时，直接把错误信息丢给 AI，学习它如何修复
+
+### ✅ 阶段作业
+- 全程不手写代码，用对话让 AI 生成一个带界面的“待办事项”小工具。
+
+---
+
+## 📅 第三阶段：机器学习速通（第 3-5 周）
+**目标：** 理解 AI 的底层逻辑，学会用最经典的库。
+
+### 3.1 理论直觉课
+- **机器学习是什么：** 从数据中找规律
+- **三大任务：** 分类（找猫狗）、回归（测房价）、聚类（分用户群）
+- **炼金术心态：** 数据是原料，模型是丹炉，调参是火候——先别钻数学公式！
+
+### 3.2 核心库入门
+- **NumPy：** 数据计算的基石（理解数组）
+- **Pandas：** 清洗表格数据的神器（读 CSV、处理缺失值）
+- **Matplotlib/Seaborn：** 画图看趋势（直方图、散点图）
+
+### 3.3 经典模型实战
+- **Scikit-learn：** 用 5 行代码跑起线性回归、决策树
+- **完整流程：** 加载数据 → 清洗 → 切分训练/测试集 → 训练 → 评估准确率
+- **跟着做：** Kaggle 的“泰坦尼克号幸存者预测”项目——AI 小白必刷课
+
+### ✅ 阶段作业
+- 找一个你感兴趣的 Excel/CSV 数据集，用 Sklearn 建模预测，并画图展示结果。
+
+---
+
+## 📅 第四阶段：深度学习入门（第 6-7 周）
+**目标：** 用最友好的方式，碰一碰神经网络。
+
+### 4.1 框架选择
+- 新手首选 **PyTorch**（比 TensorFlow 更 Pythonic，社区活跃）
+- 了解张量是什么、GPU 加速是咋回事
+
+### 4.2 图像识别入门
+- **hello world 项目：** MNIST 手写数字识别（AI 界的“新手村”）
+- **必学概念：** 卷积神经网络直觉理解（扫描、提取特征）
+- **进阶可选：** 用预训练模型 ResNet 做图片分类（站在巨人肩膀上）
+
+### 4.3 免费算力
+- 注册 Kaggle Notebook 或 Google Colab，用云 GPU 跑模型
+
+### ✅ 阶段作业
+- 用 PyTorch 在 Colab 上训练一个 MNIST 模型，识别自己手写的数字照片。
+
+---
+
+## 📅 第五阶段：调用大语言模型 API（第 8 周）
+**目标：** 开发真正的 AI 应用，接触 RAG 和智能体。
+
+### 5.1 API 调用
+- 获取 DeepSeek / 通义千问 / OpenAI 的 API Key
+- Python 发送请求，拿到回复
+- **项目：** 做一个命令行“AI 翻译官”
+
+### 5.2 进阶应用（概念了解）
+- **RAG（检索增强生成）：** 让 AI 读你的本地文件再回答（个人知识库）
+- **Agent（智能体）：** 让 AI 能自动调用搜索、计算器等工具
+- **LangChain / LlamaIndex：** 了解这两个主流框架的名字和用途
+
+### ✅ 阶段作业
+- 做一个“AI 每日新闻简报生成器”，调用模型总结指定话题的最新信息。
+
+---
+
+## 🧰 小白救急指南（遇到问题怎么办）
+
+1.  **先问 AI：** 把报错原样丢给 ChatGPT/Kimi/DeepSeek，90% 能解决。
+2.  **再查文档：** 官网 Tutorial 永远是第一手资料。
+3.  **GitHub Issues：** 搜错误关键词，常有人踩过坑。
+4.  **心态管理：** 环境报错比算法还玄学，卡住 3 天很正常，先跳过也行。
+
+---
+
+## 📚 持续学习资源
+
+- **刷题：** Kaggle Learn 系列免费短课
+- **跟项目：** 去 B 站搜“5 个 Python AI 实战项目”
+- **读代码：** GitHub 搜 `awesome-ai-project`，多读别人的玩具代码
+- **推荐书籍（按需）：**
+  - 《Python编程：从入门到实践》（工具书）
+  - 《机器学习实战》（基于 Sklearn）
+  - 《动手学深度学习》（李沐，在线免费）
+
+https://mp.weixin.qq.com/s/13_NsmAD6iRkXfoqfBb6_A
+/source-md-->

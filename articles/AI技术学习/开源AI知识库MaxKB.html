@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>开源AI知识库MaxKB</title>
+<link rel="stylesheet" href="/static/github-markdown.min.css">
+<style>
+  body { margin:0; background:#fff; }
+  .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 860px; margin: 0 auto; padding: 45px 45px 96px; }
+  .wiki-link { color:#1a73e8; text-decoration:none; border-bottom:1px dashed #1a73e8; }
+  .wiki-link:hover { border-bottom-style:solid; }
+  .md-asset-link { display:inline-flex; align-items:center; gap:8px; padding:10px 12px; margin:6px 0; border:1px solid #dbe2ea; border-radius:10px; background:#f8fafc; color:#0f172a; text-decoration:none; max-width:100%; }
+  .md-asset-link:hover { background:#eef6ff; border-color:#bfd3ea; }
+  .md-asset-icon { font-size:16px; }
+  .md-asset-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .md-asset-image { margin:12px 0; }
+  .md-asset-image img { max-width:100%; height:auto; border-radius:10px; border:1px solid #e5e7eb; display:block; cursor:zoom-in; }
+  .md-asset-image figcaption { margin-top:6px; font-size:12px; color:#64748b; }
+  .markdown-body pre { overflow-x:auto; padding:14px 16px; border-radius:10px; background:#f6f8fa; }
+  .markdown-body code { word-break:break-word; }
+  .markdown-body table { display:block; width:max-content; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+  .markdown-body th, .markdown-body td { white-space:nowrap; }
+  .image-lightbox { position:fixed; inset:0; background:rgba(15,23,42,.82); display:none; align-items:center; justify-content:center; z-index:3000; padding:24px; }
+  .image-lightbox.open { display:flex; }
+  .image-lightbox-inner { position:relative; max-width:min(96vw,1400px); max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .image-lightbox img { max-width:96vw; max-height:88vh; width:auto; height:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); background:#fff; }
+  .image-lightbox-close { position:absolute; top:-14px; right:-14px; width:36px; height:36px; border:none; border-radius:999px; background:#fff; color:#0f172a; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+  @media (max-width:767px) { .markdown-body { padding: 15px 15px 72px; } .markdown-body pre { padding:12px; font-size:12px; } .markdown-body table { font-size:12px; } }
+</style>
+</head>
+<body>
+<article class="markdown-body"><p>MaxKB（全称 Max Knowledge Brain）是一款<strong>开箱即用、基于大语言模型（LLM）的企业级智能知识库问答系统</strong>。</p>
+<p>简单来说，它能帮你把杂乱的文档（如 Word、PDF、网页链接等）变成一个<strong>“懂业务、会回答”的 AI 助手</strong>，而且<strong>不需要你会写代码</strong>。</p>
+<p>以下是 MaxKB 的核心亮点和功能介绍：</p>
+<h3>0.1 核心功能：让文档“活”起来</h3>
+<p>MaxKB 利用 <strong>RAG（检索增强生成）</strong> 技术，解决了大模型“一本正经胡说八道”（幻觉）的问题。</p>
+<ol>
+<li><strong>上传文档</strong>：你只需要把企业的产品手册、规章制度、FAQ 等文档上传给它。</li>
+<li><strong>自动处理</strong>：系统会自动对文档进行分段、清洗和向量化处理。</li>
+<li><strong>智能问答</strong>：当用户提问时，它会先去你的知识库里找答案，再结合大模型生成精准回复，并能标注答案的<strong>来源出处</strong>。</li>
+</ol>
+<h3>0.2 为什么它广受好评？</h3>
+<ul>
+<li><strong>模型中立（不绑定厂商）</strong>：<br>  它不强制绑定某一家的大模型。你可以接入 <strong>OpenAI、Claude、Gemini</strong> 等国际模型，也可以接入 <strong>通义千问、DeepSeek、Kimi、智谱AI</strong> 等国内模型，甚至支持本地部署的私有模型（如 Llama 3、Qwen）。</li>
+<li><strong>零代码集成</strong>：<br>  不需要懂编程，通过简单的配置，就能把 AI 助手嵌入到<strong>企业微信、钉钉、飞书</strong>或者你自己的网站中。</li>
+<li><strong>可视化工作流（Workflow）</strong>：<br>  除了简单的问答，它还支持通过拖拽的方式编排复杂的业务流程。比如：先查知识库 -&gt; 再调用 API -&gt; 最后发送通知，让 AI 不仅能“答”，还能帮你“办事”。</li>
+<li><strong>部署极其简单</strong>：<br>  基于 Docker 容器化技术，通常<strong>一行命令</strong>就能在服务器上完成安装和启动。</li>
+</ul>
+<h3>0.3 适用场景</h3>
+<ul>
+<li><strong>智能客服</strong>：7x24小时自动回答客户咨询，降低人工成本。</li>
+<li><strong>企业内部知识库</strong>：员工快速查询公司制度、技术文档，新员工培训更高效。</li>
+<li><strong>学术/教育助手</strong>：基于教材或论文库，为学生提供答疑服务。</li>
+</ul>
+<h3>0.4 快速概览</h3>
+<table>
+<thead>
+<tr>
+<th align="left">特性</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>开发团队</strong></td>
+<td align="left">飞致云（也是 1Panel 的开发团队）</td>
+</tr>
+<tr>
+<td align="left"><strong>核心技术</strong></td>
+<td align="left">RAG（检索增强生成）+ LLM（大语言模型）</td>
+</tr>
+<tr>
+<td align="left"><strong>部署方式</strong></td>
+<td align="left">Docker 一键部署 / 离线安装</td>
+</tr>
+<tr>
+<td align="left"><strong>开源协议</strong></td>
+<td align="left">开源（Apache 2.0）</td>
+</tr>
+<tr>
+<td align="left">**GitHub Stars<strong></td>
+<td align="left">20K+（深受开发者信赖）</td>
+</tr>
+</tbody></table>
+<p>总的来说，如果你想快速搭建一个</strong>私有化、懂你业务数据<strong>的 AI 问答机器人，MaxKB 是目前开源社区中非常热门且成熟的选择。</p>
+<h3>0.5 MaxKB 拥有非常完善的</strong>角色权限区分机制<strong>。</h3>
+<p>在 MaxKB V2 版本中，系统引入了基于角色的访问控制（RBAC）体系，能够清晰地区分</strong>管理员**和<strong>普通用户</strong>，并支持更细粒度的权限管控。</p>
+<p>以下是具体的角色区分和功能说明：</p>
+<h3>0.6 核心角色区分</h3>
+<p>MaxKB 默认预置了三种主要角色，权限由高到低排列如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left">角色名称</th>
+<th align="left">权限级别</th>
+<th align="left">主要职责与能力</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>系统管理员</strong></td>
+<td align="left"><strong>最高</strong></td>
+<td align="left">拥有系统的所有权限。负责系统级设置、管理所有用户、配置模型、管理全局共享资源（如公共知识库、公共模型）以及查看操作日志。</td>
+</tr>
+<tr>
+<td align="left"><strong>工作空间管理员</strong></td>
+<td align="left"><strong>高</strong></td>
+<td align="left">负责特定“工作空间”内的管理。可以管理该空间内的成员、分配资源权限、创建和管理工作空间内的应用与知识库，但无法修改系统全局设置。</td>
+</tr>
+<tr>
+<td align="left"><strong>普通用户</strong></td>
+<td align="left"><strong>中/低</strong></td>
+<td align="left">默认角色。只能管理<strong>自己创建</strong>的资源（应用、知识库），或者<strong>被授权</strong>使用的共享资源。无法查看或管理他人的私有资源。</td>
+</tr>
+</tbody></table>
+<h3>0.7 权限管理的具体表现</h3>
+<p>这种角色区分在实际操作中体现在以下几个方面：</p>
+<ul>
+<li><p><strong>资源隔离与可见性</strong>：</p>
+<ul>
+<li><strong>管理员</strong>可以看到系统内所有的资源，并有权进行跨用户的资源授权。</li>
+<li><strong>普通用户</strong>登录后，只能看到自己创建的内容。如果需要使用公司的公共知识库，必须由管理员通过**“共享资源”**功能进行授权。</li>
+</ul>
+</li>
+<li><p><strong>用户管理</strong>：</p>
+<ul>
+<li>只有<strong>系统管理员</strong>可以创建新用户、重置用户密码、禁用账号或修改用户的角色。</li>
+<li><strong>普通用户</strong>无法访问用户管理界面。</li>
+</ul>
+</li>
+<li><p><strong>自定义角色（高级功能）</strong>：</p>
+<ul>
+<li>在 V2 版本中，系统还支持基于预置角色创建<strong>自定义角色</strong>。你可以继承“普通用户”的权限，然后单独勾选某些特殊权限（如“工具管理”或“模型管理”），实现更灵活的权限分配。</li>
+</ul>
+</li>
+</ul>
+<h3>0.8 特殊角色：对话用户</h3>
+<p>除了上述后台管理角色外，MaxKB 还有一种**“对话用户”<strong>角色：</p>
+<ul>
+<li>这是指最终使用 AI 助手（应用）的人。</li>
+<li>他们通常没有后台登录权限，只能通过网页、API 或集成的聊天窗口（如钉钉、企业微信）与 AI 进行对话。</li>
+</ul>
+<h3>0.9 总结</h3>
+<p>MaxKB 不仅有管理员和普通用户的区分，还通过</strong>工作空间**和<strong>资源授权</strong>机制，实现了企业级的多租户隔离。这意味着你可以放心地让普通员工使用系统，而不必担心他们会误删全局配置或查看到其他部门的敏感知识库。</p>
+</article>
+<div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
+
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+</body>
+</html>
+<!--source-md
+
+MaxKB（全称 Max Knowledge Brain）是一款**开箱即用、基于大语言模型（LLM）的企业级智能知识库问答系统**。
+
+简单来说，它能帮你把杂乱的文档（如 Word、PDF、网页链接等）变成一个**“懂业务、会回答”的 AI 助手**，而且**不需要你会写代码**。
+
+以下是 MaxKB 的核心亮点和功能介绍：
+
+### 0.1 核心功能：让文档“活”起来
+
+MaxKB 利用 **RAG（检索增强生成）** 技术，解决了大模型“一本正经胡说八道”（幻觉）的问题。
+
+1. **上传文档**：你只需要把企业的产品手册、规章制度、FAQ 等文档上传给它。
+2. **自动处理**：系统会自动对文档进行分段、清洗和向量化处理。
+3. **智能问答**：当用户提问时，它会先去你的知识库里找答案，再结合大模型生成精准回复，并能标注答案的**来源出处**。
+
+### 0.2 为什么它广受好评？
+
+- **模型中立（不绑定厂商）**：  
+    它不强制绑定某一家的大模型。你可以接入 **OpenAI、Claude、Gemini** 等国际模型，也可以接入 **通义千问、DeepSeek、Kimi、智谱AI** 等国内模型，甚至支持本地部署的私有模型（如 Llama 3、Qwen）。
+- **零代码集成**：  
+    不需要懂编程，通过简单的配置，就能把 AI 助手嵌入到**企业微信、钉钉、飞书**或者你自己的网站中。
+- **可视化工作流（Workflow）**：  
+    除了简单的问答，它还支持通过拖拽的方式编排复杂的业务流程。比如：先查知识库 -> 再调用 API -> 最后发送通知，让 AI 不仅能“答”，还能帮你“办事”。
+- **部署极其简单**：  
+    基于 Docker 容器化技术，通常**一行命令**就能在服务器上完成安装和启动。
+
+### 0.3 适用场景
+
+- **智能客服**：7x24小时自动回答客户咨询，降低人工成本。
+- **企业内部知识库**：员工快速查询公司制度、技术文档，新员工培训更高效。
+- **学术/教育助手**：基于教材或论文库，为学生提供答疑服务。
+
+### 0.4 快速概览
+
+|特性|描述|
+|:--|:--|
+|**开发团队**|飞致云（也是 1Panel 的开发团队）|
+|**核心技术**|RAG（检索增强生成）+ LLM（大语言模型）|
+|**部署方式**|Docker 一键部署 / 离线安装|
+|**开源协议**|开源（Apache 2.0）|
+|**GitHub Stars**|20K+（深受开发者信赖）|
+
+总的来说，如果你想快速搭建一个**私有化、懂你业务数据**的 AI 问答机器人，MaxKB 是目前开源社区中非常热门且成熟的选择。
+
+### 0.5 MaxKB 拥有非常完善的**角色权限区分机制**。
+
+在 MaxKB V2 版本中，系统引入了基于角色的访问控制（RBAC）体系，能够清晰地区分**管理员**和**普通用户**，并支持更细粒度的权限管控。
+
+以下是具体的角色区分和功能说明：
+
+### 0.6 核心角色区分
+
+MaxKB 默认预置了三种主要角色，权限由高到低排列如下：
+
+| 角色名称        | 权限级别    | 主要职责与能力                                                          |
+| :---------- | :------ | :--------------------------------------------------------------- |
+| **系统管理员**   | **最高**  | 拥有系统的所有权限。负责系统级设置、管理所有用户、配置模型、管理全局共享资源（如公共知识库、公共模型）以及查看操作日志。     |
+| **工作空间管理员** | **高**   | 负责特定“工作空间”内的管理。可以管理该空间内的成员、分配资源权限、创建和管理工作空间内的应用与知识库，但无法修改系统全局设置。 |
+| **普通用户**    | **中/低** | 默认角色。只能管理**自己创建**的资源（应用、知识库），或者**被授权**使用的共享资源。无法查看或管理他人的私有资源。    |
+
+### 0.7 权限管理的具体表现
+
+这种角色区分在实际操作中体现在以下几个方面：
+
+- **资源隔离与可见性**：
+    
+    - **管理员**可以看到系统内所有的资源，并有权进行跨用户的资源授权。
+    - **普通用户**登录后，只能看到自己创建的内容。如果需要使用公司的公共知识库，必须由管理员通过**“共享资源”**功能进行授权。
+- **用户管理**：
+    
+    - 只有**系统管理员**可以创建新用户、重置用户密码、禁用账号或修改用户的角色。
+    - **普通用户**无法访问用户管理界面。
+- **自定义角色（高级功能）**：
+    
+    - 在 V2 版本中，系统还支持基于预置角色创建**自定义角色**。你可以继承“普通用户”的权限，然后单独勾选某些特殊权限（如“工具管理”或“模型管理”），实现更灵活的权限分配。
+
+### 0.8 特殊角色：对话用户
+
+除了上述后台管理角色外，MaxKB 还有一种**“对话用户”**角色：
+
+- 这是指最终使用 AI 助手（应用）的人。
+- 他们通常没有后台登录权限，只能通过网页、API 或集成的聊天窗口（如钉钉、企业微信）与 AI 进行对话。
+
+### 0.9 总结
+
+MaxKB 不仅有管理员和普通用户的区分，还通过**工作空间**和**资源授权**机制，实现了企业级的多租户隔离。这意味着你可以放心地让普通员工使用系统，而不必担心他们会误删全局配置或查看到其他部门的敏感知识库。
+/source-md-->

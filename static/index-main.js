@@ -1,12 +1,14 @@
 ﻿var pageMap = {
   renwu: '/system/workbench',
-  '今日任务': '/articles/任务管理/今日任务.html',
-  '提醒事项': '/articles/任务管理/提醒事项.html'
+  '今日任务': '/system/tasks/今日任务.html',
+  '提醒事项': '/system/tasks/提醒事项.html',
+  '每日任务模板': '/system/tasks/每日任务模板.html'
 };
 var pageTitle = {
   renwu: '工作中心',
   '今日任务': '今日任务',
-  '提醒事项': '提醒事项'
+  '提醒事项': '提醒事项',
+  '每日任务模板': '每日任务模板'
 };
 
 var _fromFileList=false;
@@ -53,6 +55,14 @@ function normalizeNavPath(url){
   }
 }
 
+function buildViewUrlForPath(filePath){
+  var p=String(filePath||'').replace(/\\/g,'/');
+  if(p.indexOf('__system__/任务管理/')===0){
+    return '/system/tasks/'+encodeURIComponent(p.split('/').pop());
+  }
+  return '/articles/'+p.split('/').map(function(s){return encodeURIComponent(s)}).join('/');
+}
+
 // ── iframe 导航历史 ──
 var navStack=['/system/workbench'];
 var lastBack=0;
@@ -62,14 +72,14 @@ function navPush(url){
   var u=normalizeNavPath(url);
   if(navStack[navStack.length-1]!==u) navStack.push(u);
   document.getElementById('viewFrame').src=u;
-  document.getElementById('viewTitle').textContent=(u.includes('/system/workbench')||u.includes('renwu'))?'工作中心':u.includes('今日任务')?'今日任务':u.includes('提醒事项')?'提醒事项':decodeURIComponent(u.split('/').pop()||'-');
+  document.getElementById('viewTitle').textContent=(u.includes('/system/workbench')||u.includes('renwu'))?'工作中心':u.includes('今日任务')?'今日任务':u.includes('提醒事项')?'提醒事项':u.includes('每日任务模板')?'每日任务模板':decodeURIComponent(u.split('/').pop()||'-');
 }
 
 document.getElementById('viewFrame').addEventListener('load',function(){
   try{
     var s=normalizeNavPath(new URL(this.src).pathname);
     // 更新标题
-    document.getElementById('viewTitle').textContent=(s.includes('/system/workbench')||s.includes('renwu'))?'工作中心':s.includes('今日任务')?'今日任务':s.includes('提醒事项')?'提醒事项':s.split('/').pop()||'-';
+    document.getElementById('viewTitle').textContent=(s.includes('/system/workbench')||s.includes('renwu'))?'工作中心':s.includes('今日任务')?'今日任务':s.includes('提醒事项')?'提醒事项':s.includes('每日任务模板')?'每日任务模板':s.split('/').pop()||'-';
     // 静默导航（返回操作）不记录到 navStack
     if(window.silent){window.silent=false}else if(navStack[navStack.length-1]!==s) navStack.push(s);
     try{
@@ -127,6 +137,39 @@ function syncMobilePreviewButton(){
   }
 }
 
+function openSettingsPage(){
+  _fromFileList=false;
+  navStack=['/system/settings'];
+  document.getElementById('viewFrame').src='/system/settings';
+  document.getElementById('viewTitle').textContent='设置';
+  showMode('modeView');
+  if(isMobileViewport()) toggleSidebar(false);
+}
+
+async function loadThemePreference(){
+  try{
+    var r=await fetch('/api/settings/public');
+    var d=await r.json();
+    var settings=d.settings||{};
+    var theme=(settings.appearance||{}).theme||'light';
+    var siteTitle=(settings.profile||{}).siteTitle||'江月的笔记网站';
+    document.body.classList.toggle('dark',theme==='dark');
+    document.title=siteTitle;
+    var brand=document.getElementById('siteBrand');
+    if(brand) brand.innerHTML='<i class="bi bi-journal-text"></i> '+siteTitle;
+    try{ localStorage.setItem('liruibiji_theme',theme); }catch(e){}
+  }catch(e){
+    try{
+      var cached=localStorage.getItem('liruibiji_theme')||'light';
+      document.body.classList.toggle('dark',cached==='dark');
+      var cachedTitle=localStorage.getItem('liruibiji_site_title')||'江月的笔记网站';
+      document.title=cachedTitle;
+      var brand=document.getElementById('siteBrand');
+      if(brand) brand.innerHTML='<i class="bi bi-journal-text"></i> '+cachedTitle;
+    }catch(err){}
+  }
+}
+
 function closeMobilePreview(){
   mobilePreviewOpen=false;
   var mode=document.getElementById('modeEdit');
@@ -155,6 +198,29 @@ function toggleMobilePreview(){
 var currentDir='',currentFile='',renameTarget='',deleteTarget='';
 var dirTreeData={};
 var searchMode='notes';
+var blurredFileMap={};
+
+function loadBlurredFileMap(){
+  try{ blurredFileMap=JSON.parse(localStorage.getItem('liruibiji_blurred_files')||'{}')||{}; }
+  catch(e){ blurredFileMap={}; }
+}
+
+function saveBlurredFileMap(){
+  try{ localStorage.setItem('liruibiji_blurred_files',JSON.stringify(blurredFileMap||{})); }catch(e){}
+}
+
+function isFileBlurred(path){
+  return !!blurredFileMap[String(path||'')];
+}
+
+function toggleFileBlur(path){
+  var key=String(path||'');
+  if(!key) return;
+  if(blurredFileMap[key]) delete blurredFileMap[key];
+  else blurredFileMap[key]=true;
+  saveBlurredFileMap();
+  loadDir(currentDir||'');
+}
 
 function toggleSidebar(forceOpen){
   var sidebar=document.querySelector('.sidebar-left');
@@ -233,14 +299,12 @@ function renderEmptySearch(text, icon){
 
 function createResultCard(iconHtml, titleHtml, linesHtml, clickHandler){
   var div=document.createElement('div');
-  div.style.cssText='padding:10px 12px;margin:0 0 10px;border:1px solid #eaeef2;border-radius:12px;background:#fff;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.03)';
-  div.onmouseover=function(){this.style.background='#f8fbff';this.style.borderColor='#d6e4f5';};
-  div.onmouseout=function(){this.style.background='#fff';this.style.borderColor='#eaeef2';};
+  div.className='result-card';
   if(clickHandler) div.onclick=clickHandler;
   div.innerHTML='<div style="display:flex;align-items:flex-start;gap:8px">'
-    + '<div style="padding-top:1px;color:#888;flex-shrink:0">'+iconHtml+'</div>'
+    + '<div class="result-card-icon">'+iconHtml+'</div>'
     + '<div style="flex:1;min-width:0">'
-    +   '<div style="font-size:13px;color:#222;font-weight:700;line-height:1.5;word-break:break-word;overflow-wrap:anywhere">'+titleHtml+'</div>'
+    +   '<div class="result-card-title">'+titleHtml+'</div>'
     +   linesHtml
     + '</div></div>';
   return div;
@@ -255,13 +319,13 @@ function searchNotes(q){
       data.files.forEach(function(f){
         var icon=f.isDir?'<i class="bi bi-folder"></i>':'<i class="bi bi-file-text"></i>';
         var hlName=highlightKw(esc(f.name),f.keyword||q);
-        var lines='<div style="font-size:11px;color:#999;margin-top:5px;line-height:1.45;word-break:break-word;overflow-wrap:anywhere">'+esc(f.path)+'</div>';
+        var lines='<div class="result-card-sub">'+esc(f.path)+'</div>';
         if(f.matchType){
-          var badgeColor=f.matchType==='content'?'#1a73e8':'#34a853';
+          var badgeColor=f.matchType==='content'?'#477F8A':'#34a853';
           lines+='<div style="font-size:11px;color:'+badgeColor+';margin-top:5px">'+(f.matchType==='content'?'📄 内容匹配':'📁 文件名匹配')+'</div>';
         }
         if(f.snippet){
-          lines+='<div style="font-size:12px;color:#555;margin-top:7px;padding:7px 8px;background:#f8f9fa;border-radius:8px;line-height:1.55;word-break:break-word;overflow-wrap:anywhere">'+highlightKw(esc(f.snippet),f.keyword||q)+'</div>';
+          lines+='<div class="result-card-snippet">'+highlightKw(esc(f.snippet),f.keyword||q)+'</div>';
         }
         var div=createResultCard(icon, hlName, lines, function(){
           if(f.isDir){loadDir(f.dir||'')}else{viewSearchFile(f.name,f.path)}
@@ -317,9 +381,9 @@ function searchRecycle(q){
       var div=createResultCard(
         '<i class="bi '+(it.isDir?'bi-folder':'bi-file-earmark')+'"></i>',
         highlightKw(esc(it.name),q),
-        '<div style="font-size:11px;color:#999;margin-top:5px;line-height:1.45;word-break:break-word;overflow-wrap:anywhere">原路径：'+highlightKw(esc(it.originalPath),q)+'</div>'
-        + '<div style="font-size:11px;color:#999;margin-top:4px">删除时间：'+esc(it.deletedAt||'')+'</div>'
-        + '<div style="margin-top:8px"><button type="button" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid #cfe0ff;background:#eef5ff;color:#1a73e8;font-size:12px;font-weight:700;cursor:pointer" onclick="event.stopPropagation();restoreRecycleItem(\''+escAttr(it.id)+'\')">恢复</button></div>'
+        '<div class="result-card-sub">原路径：'+highlightKw(esc(it.originalPath),q)+'</div>'
+        + '<div class="result-card-sub" style="margin-top:4px">删除时间：'+esc(it.deletedAt||'')+'</div>'
+        + '<div style="margin-top:8px"><button type="button" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid #cfe0e4;background:#eef6f7;color:#477F8A;font-size:12px;font-weight:700;cursor:pointer" onclick="event.stopPropagation();restoreRecycleItem(\''+escAttr(it.id)+'\')">恢复</button></div>'
       );
       el.appendChild(div);
     });
@@ -352,7 +416,7 @@ function searchHistory(q){
       var div=createResultCard(
         '<i class="bi bi-clock-history"></i>',
         highlightKw(esc(it.path),q),
-        '<div style="font-size:11px;color:#999;margin-top:5px">版本：'+highlightKw(esc(it.time||it.version||''),q)+'</div>',
+        '<div class="result-card-sub">版本：'+highlightKw(esc(it.time||it.version||''),q)+'</div>',
         function(){
         if(it.path) viewFile(it.path.split('/').pop(), it.path);
       });
@@ -465,7 +529,10 @@ function renderBreadcrumb(bc){
 
 function renderFileList(files){
   var tbody=document.getElementById('fileList'),empty=document.getElementById('emptyState');
+  var selectAll=document.getElementById('selectAllCheckbox');
   tbody.innerHTML='';
+  selectedItems={};
+  if(selectAll) selectAll.checked=false;
   if(!files||files.length===0){empty.style.display='flex';document.getElementById('fileTable').style.display='none';return}
   empty.style.display='none';document.getElementById('fileTable').style.display='';
   files.forEach(function(f,i){
@@ -473,20 +540,139 @@ function renderFileList(files){
     var icon=f.isDir?'<i class="bi bi-folder"></i>':'<i class="bi bi-file-text"></i>';
     var nameClass=f.isDir?'file-name dir-name':'file-name';
     var clickAction=f.isDir?'loadDir(\''+escAttr(f.path)+'\')':'viewFile(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\')';
+    var blurOn=!f.isDir&&isFileBlurred(f.path);
+    var blurClass=blurOn?'file-title-blur':'';
+    var blurIcon=blurOn?'bi-eye-slash':'bi-eye';
+    var blurTitle=blurOn?'恢复正常显示':'模糊显示标题';
     tr.className='file-row';
     tr.draggable=!f.isDir;
     tr.dataset.path=f.path;
-    tr.innerHTML='<td class="num-col"><input type="checkbox" class="file-item-checkbox" onchange="toggleFileSelect(\'\'+escAttr(f.path)+\'\',this.checked)"></td>' 
-      +'<td><div class="'+nameClass+'" onclick="'+clickAction+'">'+icon+' <span>'+esc(f.name)+'</span></div></td>'
+    tr.dataset.name=f.name;
+    tr.dataset.isdir=f.isDir?'1':'0';
+    tr.innerHTML='<td class="num-col"><input type="checkbox" class="file-item-checkbox"></td>' 
+      +'<td><div class="'+nameClass+'" onclick="'+clickAction+'">'+icon+' <span class="'+blurClass+'">'+esc(f.name)+'</span></div></td>'
       +'<td class="size-col">'+(f.size||'-')+'</td>'
       +'<td class="time-col">'+(f.mtime||'-')+'</td>'
       +'<td class="file-actions">'
-      +(!f.isDir?'<a class="btn-link" href="javascript:void(0)" onclick="moveItem(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\')" title="移动到"><i class="bi bi-arrow-right"></i></a> ':'')
       +'<a class="btn-link" href="javascript:void(0)" onclick="renameItem(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\','+f.isDir+')" title="重命名"><i class="bi bi-pencil"></i></a> '
-      +'<a class="btn-link btn-del" href="javascript:void(0)" onclick="deleteItem(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\','+f.isDir+')" title="删除"><i class="bi bi-trash"></i></a>'
+      +(f.isDir?'':'<a class="btn-link" href="javascript:void(0)" onclick="shareItem(\''+escAttr(f.name)+'\',\''+escAttr(f.path)+'\')" title="分享"><i class="bi bi-share"></i></a> '
+      +'<a class="btn-link" href="javascript:void(0)" onclick="toggleFileBlur(\''+escAttr(f.path)+'\')" title="'+blurTitle+'"><i class="bi '+blurIcon+'"></i></a> ')
       +'</td>';
+    var checkbox=tr.querySelector('.file-item-checkbox');
+    if(checkbox){
+      checkbox.onchange=function(){
+        toggleFileSelect(f.path,this.checked);
+        syncSelectAllCheckbox();
+      };
+    }
     tbody.appendChild(tr);
   });
+}
+
+function toggleFileSelect(path,checked){
+  var row=document.querySelector('.file-row[data-path="'+escAttr(path)+'"]');
+  if(!row) return;
+  if(checked){
+    selectedItems[path]={name:row.dataset.name||path.split('/').pop()||path,path:path,isDir:row.dataset.isdir==='1'};
+  }else{
+    delete selectedItems[path];
+  }
+}
+
+function getSelectedItems(){
+  var rows=document.querySelectorAll('#fileList .file-row');
+  var items=[];
+  rows.forEach(function(row){
+    var checkbox=row.querySelector('.file-item-checkbox');
+    if(!checkbox||!checkbox.checked) return;
+    items.push({
+      name:row.dataset.name||((row.dataset.path||'').split('/').pop()||''),
+      path:row.dataset.path||'',
+      isDir:row.dataset.isdir==='1'
+    });
+  });
+  return items.filter(function(it){ return !!it.path; });
+}
+
+function syncSelectAllCheckbox(){
+  var selectAll=document.getElementById('selectAllCheckbox');
+  if(!selectAll) return;
+  var boxes=Array.from(document.querySelectorAll('#fileList .file-item-checkbox'));
+  if(!boxes.length){
+    selectAll.checked=false;
+    selectAll.indeterminate=false;
+    return;
+  }
+  var checkedCount=boxes.filter(function(box){ return box.checked; }).length;
+  selectAll.checked=checkedCount>0 && checkedCount===boxes.length;
+  selectAll.indeterminate=checkedCount>0 && checkedCount<boxes.length;
+}
+
+function toggleSelectAll(checked){
+  var boxes=document.querySelectorAll('#fileList .file-item-checkbox');
+  boxes.forEach(function(box){
+    box.checked=!!checked;
+    var row=box.closest('.file-row');
+    if(row&&row.dataset&&row.dataset.path) toggleFileSelect(row.dataset.path,!!checked);
+  });
+  syncSelectAllCheckbox();
+}
+
+function moveSelectedItems(){
+  var items=getSelectedItems();
+  if(!items.length){ alert('请先勾选要移动的文件或文件夹'); return; }
+  if(items.length===1) return moveItem(items[0].name,items[0].path,items[0].isDir);
+  return moveItem(items[0].name,items[0].path,items[0].isDir,items);
+}
+
+function deleteSelectedItems(){
+  var items=getSelectedItems();
+  if(!items.length){ alert('请先勾选要删除的文件或文件夹'); return; }
+  if(items.length===1) return deleteItem(items[0].name,items[0].path,items[0].isDir);
+  deleteTarget={batch:true,items:items};
+  document.getElementById('deleteMsg').textContent='确定要删除选中的 '+items.length+' 项吗？';
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function copyTextWithFallback(text){
+  if(navigator.clipboard && window.isSecureContext){
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  var ta=document.createElement('textarea');
+  ta.value=String(text||'');
+  ta.setAttribute('readonly','readonly');
+  ta.style.position='fixed';
+  ta.style.top='0';
+  ta.style.left='-9999px';
+  ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0,ta.value.length);
+  var ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){ ok=false; }
+  document.body.removeChild(ta);
+  if(!ok) throw new Error('复制失败');
+  return true;
+}
+
+async function shareItem(name,path){
+  try{
+    var r=await fetch('/api/share/create',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path:path})
+    });
+    var d=await r.json();
+    if(!d.success) throw new Error(d.error||'生成分享链接失败');
+    var url=new URL(buildViewUrlForPath(path), window.location.origin);
+    url.searchParams.set('share', d.token);
+    await copyTextWithFallback(url.toString());
+    alert('分享链接已复制');
+  }catch(e){
+    alert('分享失败：'+e.message);
+  }
 }
 
 // ── 查看文件 ──
@@ -495,10 +681,10 @@ function viewFile(name,path){
   isNewFileMode=false;
   pendingNewFilePath='';
   _fromFileList=true;
-  navStack=['/articles/'+currentFile.split('/').map(function(s){return encodeURIComponent(s)}).join('/')];
+  navStack=[buildViewUrlForPath(currentFile)];
   showMode('modeView');
   document.getElementById('viewTitle').textContent=name;
-  document.getElementById('viewFrame').src='/articles/'+currentFile.split('/').map(function(s){return encodeURIComponent(s)}).join('/');
+  document.getElementById('viewFrame').src=buildViewUrlForPath(currentFile);
 }
 
 function openFromWorkbench(name,path){
@@ -509,7 +695,7 @@ function openFromWorkbench(name,path){
   navStack=['/system/workbench'];
   showMode('modeView');
   document.getElementById('viewTitle').textContent=name;
-  document.getElementById('viewFrame').src='/articles/'+currentFile.split('/').map(function(s){return encodeURIComponent(s)}).join('/');
+  document.getElementById('viewFrame').src=buildViewUrlForPath(currentFile);
 }
 
 function backToList(){
@@ -574,26 +760,26 @@ function ensureImageDialog(){
   if(document.getElementById('imageInsertOverlay')) return;
   var overlay=document.createElement('div');
   overlay.id='imageInsertOverlay';
-  overlay.style.cssText='display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:4000;align-items:flex-start;justify-content:center;padding:60px 12px 24px;overflow-y:auto';
+  overlay.className='app-overlay';
   overlay.innerHTML=''
-    + '<div style="background:#fff;width:92%;max-width:460px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:20px;max-height:calc(100vh - 100px);overflow-y:auto">'
-    +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-    +     '<div style="font-size:16px;font-weight:600">插入图片</div>'
-    +     '<button id="imageInsertClose" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:#888">×</button>'
+    + '<div class="app-dialog" style="max-width:460px">'
+    +   '<div class="app-dialog-head">'
+    +     '<div class="app-dialog-title">插入图片</div>'
+    +     '<button id="imageInsertClose" class="app-dialog-close">×</button>'
     +   '</div>'
-    +   '<div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0">'
+    +   '<div class="app-field">'
     +     '<div>'
-    +       '<div style="font-size:13px;color:#555;margin-bottom:6px">图片地址</div>'
-    +       '<input id="imageInsertUrl" type="text" placeholder="https://example.com/image.png" style="width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;outline:none">'
+    +       '<div class="app-label">图片地址</div>'
+    +       '<input id="imageInsertUrl" type="text" placeholder="https://example.com/image.png" class="app-input">'
     +     '</div>'
     +     '<div>'
-    +       '<div style="font-size:13px;color:#555;margin-bottom:6px">说明文字（可选）</div>'
-    +       '<input id="imageInsertAlt" type="text" placeholder="图片说明" style="width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;outline:none">'
+    +       '<div class="app-label">说明文字（可选）</div>'
+    +       '<input id="imageInsertAlt" type="text" placeholder="图片说明" class="app-input">'
     +     '</div>'
     +   '</div>'
-    +   '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-shrink:0">'
-    +     '<button id="imageInsertCancel" style="padding:8px 20px;border-radius:6px;border:1px solid #d0d7de;background:#f6f8fa;cursor:pointer;font-size:14px">取消</button>'
-    +     '<button id="imageInsertConfirm" style="padding:8px 20px;border-radius:6px;border:1px solid #0969da;background:#0969da;color:#fff;cursor:pointer;font-size:14px">插入</button>'
+    +   '<div class="app-actions">'
+    +     '<button id="imageInsertCancel" class="app-btn">取消</button>'
+    +     '<button id="imageInsertConfirm" class="app-btn app-btn-primary">插入</button>'
     +   '</div>'
     + '</div>';
   document.body.appendChild(overlay);
@@ -615,26 +801,26 @@ function ensureLinkDialog(){
   if(document.getElementById('linkInsertOverlay')) return;
   var overlay=document.createElement('div');
   overlay.id='linkInsertOverlay';
-  overlay.style.cssText='display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:4000;align-items:flex-start;justify-content:center;padding-top:60px';
+  overlay.className='app-overlay';
   overlay.innerHTML=''
-    + '<div style="background:#fff;width:92%;max-width:460px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:20px;max-height:calc(100vh - 100px);overflow-y:auto">'
-    +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-    +     '<div style="font-size:16px;font-weight:600">插入链接</div>'
-    +     '<button id="linkInsertClose" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:#888">×</button>'
+    + '<div class="app-dialog" style="max-width:460px">'
+    +   '<div class="app-dialog-head">'
+    +     '<div class="app-dialog-title">插入链接</div>'
+    +     '<button id="linkInsertClose" class="app-dialog-close">×</button>'
     +   '</div>'
-    +   '<div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow:hidden">'
+    +   '<div class="app-field" style="overflow:hidden">'
     +     '<div>'
-    +       '<div style="font-size:13px;color:#555;margin-bottom:6px">链接地址</div>'
-    +       '<input id="linkInsertUrl" type="text" placeholder="https://example.com" style="width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;outline:none">'
+    +       '<div class="app-label">链接地址</div>'
+    +       '<input id="linkInsertUrl" type="text" placeholder="https://example.com" class="app-input">'
     +     '</div>'
     +     '<div>'
-    +       '<div style="font-size:13px;color:#555;margin-bottom:6px">显示文字（可选）</div>'
-    +       '<input id="linkInsertText" type="text" placeholder="链接文字" style="width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;outline:none">'
+    +       '<div class="app-label">显示文字（可选）</div>'
+    +       '<input id="linkInsertText" type="text" placeholder="链接文字" class="app-input">'
     +     '</div>'
     +   '</div>'
-    +   '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-shrink:0;padding-top:12px;border-top:1px solid #f0f0f0;background:#fff">'
-    +     '<button id="linkInsertCancel" style="padding:8px 20px;border-radius:6px;border:1px solid #d0d7de;background:#f6f8fa;cursor:pointer;font-size:14px">取消</button>'
-    +     '<button id="linkInsertConfirm" style="padding:8px 20px;border-radius:6px;border:1px solid #0969da;background:#0969da;color:#fff;cursor:pointer;font-size:14px">插入</button>'
+    +   '<div class="app-actions" style="padding-top:12px;border-top:1px solid #f0f0f0">'
+    +     '<button id="linkInsertCancel" class="app-btn">取消</button>'
+    +     '<button id="linkInsertConfirm" class="app-btn app-btn-primary">插入</button>'
     +   '</div>'
     + '</div>';
   document.body.appendChild(overlay);
@@ -665,26 +851,26 @@ function ensureInternalLinkDialog(){
   if(document.getElementById('internalLinkOverlay')) return;
   var overlay=document.createElement('div');
   overlay.id='internalLinkOverlay';
-  overlay.style.cssText='display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:4000;align-items:flex-start;justify-content:center;padding-top:60px';
+  overlay.className='app-overlay';
   overlay.innerHTML=''
-    + '<div style="background:#fff;width:100%;max-width:520px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:20px;max-height:calc(100vh - 84px);display:flex;flex-direction:column;overflow:hidden">'
-    +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-    +     '<div style="font-size:16px;font-weight:600">插入内部链接</div>'
-    +     '<button id="internalLinkClose" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:#888">×</button>'
+    + '<div class="app-dialog" style="width:100%;max-width:520px;max-height:calc(100vh - 84px);display:flex;flex-direction:column;overflow:hidden">'
+    +   '<div class="app-dialog-head">'
+    +     '<div class="app-dialog-title">插入内部链接</div>'
+    +     '<button id="internalLinkClose" class="app-dialog-close">×</button>'
     +   '</div>'
-    +   '<div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow:hidden">'
+    +   '<div class="app-field" style="overflow:hidden">'
     +     '<div>'
-    +       '<div style="font-size:13px;color:#555;margin-bottom:6px">搜索文件</div>'
-    +       '<input id="internalLinkSearch" type="text" placeholder="输入文件名筛选" style="width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;outline:none">'
+    +       '<div class="app-label">搜索文件</div>'
+    +       '<input id="internalLinkSearch" type="text" placeholder="输入文件名筛选" class="app-input">'
     +     '</div>'
     +     '<div style="display:flex;flex-direction:column;min-height:0;flex:1">'
-    +       '<div style="font-size:13px;color:#555;margin-bottom:6px">选择文件</div>'
-    +       '<div id="internalLinkList" style="border:1px solid #e5e7eb;border-radius:8px;flex:1;min-height:260px;overflow-y:auto;background:#fff"></div>'
+    +       '<div class="app-label">选择文件</div>'
+    +       '<div id="internalLinkList" class="app-list"></div>'
     +     '</div>'
     +   '</div>'
-    +   '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">'
-    +     '<button id="internalLinkCancel" style="padding:8px 20px;border-radius:6px;border:1px solid #d0d7de;background:#f6f8fa;cursor:pointer;font-size:14px">取消</button>'
-    +     '<button id="internalLinkConfirm" style="padding:8px 20px;border-radius:6px;border:1px solid #0969da;background:#0969da;color:#fff;cursor:pointer;font-size:14px" disabled>插入</button>'
+    +   '<div class="app-actions">'
+    +     '<button id="internalLinkCancel" class="app-btn">取消</button>'
+    +     '<button id="internalLinkConfirm" class="app-btn app-btn-primary" disabled>插入</button>'
     +   '</div>'
     + '</div>';
   document.body.appendChild(overlay);
@@ -722,11 +908,11 @@ function renderInternalLinkList(files, keyword){
     var item=document.createElement('div');
     item.dataset.name=baseName;
     item.dataset.rel=relPath;
-    item.style.cssText='padding:10px 12px;border-bottom:1px solid #f1f3f5;cursor:pointer';
-    item.innerHTML='<div style="font-size:14px;color:#222">'+esc(baseName)+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+esc(relPath)+' → '+esc(f.path||f.name||'')+'</div>';
+    item.className='app-list-item';
+    item.innerHTML='<div class="app-list-title">'+esc(baseName)+'</div><div class="app-list-path">'+esc(relPath)+' → '+esc(f.path||f.name||'')+'</div>';
     item.onclick=function(){
-      Array.from(list.children).forEach(function(el){ el.style.background=''; });
-      this.style.background='#e8f0fe';
+      Array.from(list.children).forEach(function(el){ el.classList.remove('active'); });
+      this.classList.add('active');
       window._internalLinkSelected=this.dataset.rel || baseName;
       confirmBtn.disabled=false;
     };
@@ -786,19 +972,19 @@ function ensureAssetDialog(){
   if(document.getElementById('assetInsertOverlay')) return;
   var overlay=document.createElement('div');
   overlay.id='assetInsertOverlay';
-  overlay.style.cssText='display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:4000;align-items:flex-start;justify-content:center;padding:60px 12px 24px;overflow-y:auto';
+  overlay.className='app-overlay';
   overlay.innerHTML=''
-    + '<div style="background:#fff;width:92%;max-width:520px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:20px;max-height:calc(100vh - 100px);overflow-y:auto">'
-    +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-    +     '<div style="font-size:16px;font-weight:600">上传图片和附件</div>'
-    +     '<button id="assetInsertClose" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:#888">×</button>'
+    + '<div class="app-dialog" style="max-width:520px">'
+    +   '<div class="app-dialog-head">'
+    +     '<div class="app-dialog-title">上传图片和附件</div>'
+    +     '<button id="assetInsertClose" class="app-dialog-close">×</button>'
     +   '</div>'
-    +   '<div style="font-size:13px;color:#555;margin-bottom:8px">支持任意格式，大小不超过 5MB，会按当前文章或目录自动归档</div>'
+    +   '<div class="app-label" style="margin-bottom:8px">支持任意格式，大小不超过 5MB，会按当前文章或目录自动归档</div>'
     +   '<input id="assetInsertFile" type="file" style="display:block;width:100%;margin-bottom:12px">'
     +   '<div id="assetInsertInfo" style="font-size:12px;color:#666;margin-bottom:12px"></div>'
-    +   '<div style="display:flex;gap:8px;justify-content:flex-end">'
-    +     '<button id="assetInsertCancel" style="padding:8px 20px;border-radius:6px;border:1px solid #d0d7de;background:#f6f8fa;cursor:pointer;font-size:14px">取消</button>'
-    +     '<button id="assetInsertConfirm" style="padding:8px 20px;border-radius:6px;border:1px solid #0969da;background:#0969da;color:#fff;cursor:pointer;font-size:14px">上传并插入</button>'
+    +   '<div class="app-actions">'
+    +     '<button id="assetInsertCancel" class="app-btn">取消</button>'
+    +     '<button id="assetInsertConfirm" class="app-btn app-btn-primary">上传并插入</button>'
     +   '</div>'
     + '</div>';
   document.body.appendChild(overlay);
@@ -850,15 +1036,20 @@ function editFromView(){
   var iframeSrc=document.getElementById('viewFrame').src;
   // 只允许编辑 /articles/ 下的 .html 文件
   var m=iframeSrc.match(/\/articles\/([^?#]+\.html)/i);
+  var isSystemTask=false;
+  if(!m){
+    m=iframeSrc.match(/\/system\/tasks\/([^?#]+\.html)/i);
+    if(m) isSystemTask=true;
+  }
   if(!m){
     var title=document.getElementById('viewTitle').textContent;
-    if(title==='工作中心'||title==='今日任务'||title==='提醒事项')
+    if(title==='工作中心')
       alert('当前页面是任务面板，无可编辑的文件');
     else
       alert('当前页面不是可编辑的文件');
     return;
   }
-  currentFile=decodeURIComponent(m[1]);
+  currentFile=isSystemTask?('__system__/任务管理/'+decodeURIComponent(m[1])):decodeURIComponent(m[1]);
   isNewFileMode=false;
   pendingNewFilePath='';
   document.getElementById('editTitle').textContent=document.getElementById('viewTitle').textContent;
@@ -1074,6 +1265,69 @@ function doRename(){
   }).catch(function(e){console.error('重命名失败:',e);alert('重命名失败')})
 }
 
+
+// ── 移动 ──
+var moveTarget=null;
+var moveSelectedDir='';
+function moveItem(name,path,isDir,batchItems){
+  moveTarget={name:name,path:path,isDir:!!isDir,items:Array.isArray(batchItems)?batchItems:null};
+  moveSelectedDir='';
+  document.getElementById('moveMsg').textContent=(moveTarget.items&&moveTarget.items.length>1)?('选择目标文件夹（将移动 '+moveTarget.items.length+' 项）：'):'选择目标文件夹：';
+  document.getElementById('moveBtn').disabled=true;
+  renderMoveDirTree();
+  new bootstrap.Modal(document.getElementById('moveModal')).show();
+}
+
+function renderMoveDirTree(){
+  var box=document.getElementById('moveDirTree');
+  if(!box) return;
+  box.innerHTML='<div style="color:#999;padding:8px">加载中...</div>';
+  fetch('/api/dirs').then(function(r){return r.json()}).then(function(data){
+    box.innerHTML='';
+    var items=[{name:'根目录',path:''}];
+    function walk(arr,prefix){
+      (arr||[]).forEach(function(it){
+        items.push({name:(prefix?prefix+' / ':'')+it.name,path:it.path});
+        if(it.children&&it.children.length) walk(it.children,(prefix?prefix+' / ':'')+it.name);
+      });
+    }
+    walk(data,'');
+    items.forEach(function(it){
+      var div=document.createElement('div');
+      div.className='move-dir-item';
+      div.innerHTML='<div class="move-dir-name"><i class="bi bi-folder" style="margin-right:8px"></i>'+esc(it.name)+'</div><div class="move-dir-path">'+esc(it.path||'/')+'</div>';
+      div.onclick=function(){
+        Array.from(box.children).forEach(function(x){x.classList.remove('active');});
+        div.classList.add('active');
+        moveSelectedDir=it.path||'';
+        document.getElementById('moveBtn').disabled=false;
+      };
+      box.appendChild(div);
+    });
+  }).catch(function(){
+    box.innerHTML='<div style="color:#e74c3c;padding:8px">目录加载失败</div>';
+  });
+}
+
+function doMove(){
+  if(!moveTarget) return;
+  var items=(moveTarget.items&&moveTarget.items.length)?moveTarget.items:[moveTarget];
+  var req;
+  if(items.length>1){
+    req=fetch('/api/move-batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items,targetDir:moveSelectedDir})}).then(function(r){return r.json()});
+  }else{
+    req=fetch('/api/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:items[0].path,targetDir:moveSelectedDir})}).then(function(r){return r.json()});
+  }
+  req.then(function(result){
+    if(!result.success){ alert('移动失败: '+(result.error||'')); return; }
+    bootstrap.Modal.getInstance(document.getElementById('moveModal')).hide();
+    selectedItems={};
+    moveTarget=null;
+    moveSelectedDir='';
+    loadDir(currentDir);loadDirs();
+  }).catch(function(e){console.error('移动失败:',e);alert('移动失败')});
+}
+
 // ── 删除 ──
 function deleteItem(name,path,isDir){
   deleteTarget={name:name,path:path,isDir:isDir};
@@ -1081,9 +1335,19 @@ function deleteItem(name,path,isDir){
   new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 function doDelete(){
+  if(deleteTarget&&deleteTarget.batch&&Array.isArray(deleteTarget.items)){
+    Promise.all(deleteTarget.items.map(function(it){
+      return fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:it.path,isDir:it.isDir})}).then(function(r){return r.json()});
+    })).then(function(){
+      bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+      selectedItems={};
+      loadDir(currentDir);loadDirs();
+    }).catch(function(e){console.error('删除失败:',e);alert('删除失败')});
+    return;
+  }
   fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:deleteTarget.path,isDir:deleteTarget.isDir})})
   .then(function(r){return r.json()}).then(function(d){
-    if(d.success){bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();loadDir(currentDir);loadDirs()}
+    if(d.success){bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();selectedItems={};loadDir(currentDir);loadDirs()}
     else alert('删除失败: '+(d.error||''));
   }).catch(function(e){console.error('删除失败:',e);alert('删除失败')})
 }
@@ -1165,7 +1429,9 @@ function redoEdit(){
 
 // ── 初始化 ──
 document.addEventListener('DOMContentLoaded',function(){
+  loadBlurredFileMap();
   document.getElementById('headerDate').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  loadThemePreference();
   loadDirs();
   // loadDir('');
   // 检查 ?view= 参数
@@ -1173,7 +1439,20 @@ document.addEventListener('DOMContentLoaded',function(){
   var view=p.get('view');
   if(view){var pn=pageTitle[view];if(pn){document.getElementById('viewFrame').src=pageMap[view];document.getElementById('viewTitle').textContent=pn;showMode('modeView')}else viewFile(view,view)}
   else{openPage('renwu')}
+  var selectAll=document.getElementById('selectAllCheckbox');
+  if(selectAll){
+    selectAll.addEventListener('change',function(){
+      toggleSelectAll(this.checked);
+    });
+  }
 });
+
+window.navPush = navPush;
+window.loadDir = loadDir;
+window.viewFile = viewFile;
+window.openFromWorkbench = openFromWorkbench;
+window.newFile = newFile;
+window.backToList = backToList;
 
 window.addEventListener('resize',function(){
   if(!isMobileViewport()){

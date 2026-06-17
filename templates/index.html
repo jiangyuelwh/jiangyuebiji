@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>江月个人空间</title>
+<title>江月的笔记网站</title>
 <link href="/static/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/static/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/static/index.css">
@@ -13,7 +13,7 @@
 <!-- 顶栏 -->
 <div class="header">
   <button class="sidebar-toggle btn btn-sm text-white" onclick="toggleSidebar()" style="border:none;background:transparent;padding:4px 8px;font-size:20px;line-height:1"><i class="bi bi-list"></i></button>
-  <a class="brand" href="/"><i class="bi bi-journal-text"></i> 江月个人空间</a>
+  <a class="brand" href="/" id="siteBrand"><i class="bi bi-journal-text"></i> 江月的笔记网站</a>
   <span style="font-size:13px;color:#aaa;margin-left:auto" id="headerDate"></span>
 </div>
 
@@ -36,7 +36,7 @@
     <div id="searchArea" style="display:none;padding:8px 10px;border-bottom:1px solid #f0f0f0;flex:1;min-height:0;overflow:hidden">
       <div style="display:flex;gap:6px">
         <input id="searchInput" type="text" placeholder="搜索文件名..." style="flex:1;padding:6px 10px;border:1px solid #d0d7de;border-radius:6px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')doSearch()">
-        <button onclick="doSearch()" style="padding:4px 8px;background:#0969da;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px" title="搜索"><i class="bi bi-search" style="font-size:12px"></i></button>
+        <button onclick="doSearch()" style="padding:4px 8px;background:#477F8A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px" title="搜索"><i class="bi bi-search" style="font-size:12px"></i></button>
         <button onclick="toggleSearch()" style="padding:4px 8px;background:transparent;color:#888;border:1px solid #d0d7de;border-radius:6px;cursor:pointer;font-size:13px" title="关闭搜索">X</button>
       </div>
       <div id="searchResults" style="margin-top:6px;height:calc(100% - 38px);overflow-y:auto;overflow-x:hidden;font-size:13px;word-break:break-word;overflow-wrap:anywhere"></div>
@@ -45,20 +45,16 @@
     <div id="dirTreeStatus" style="padding:4px 14px;font-size:12px;color:#999"></div>
     <div class="dir-tree" id="dirTree"></div>
 
-      <div style="padding:8px 12px;font-size:11px;color:#bbb;border-top:1px solid #f0f0f0;margin-top:auto;flex-shrink:0">© 2026 江月 158297295@qq.com</div>
+      <div style="padding:10px 12px 8px;border-top:1px solid #f0f0f0;margin-top:auto;flex-shrink:0">
+        <button type="button" class="panel-setting-btn" onclick="openSettingsPage()"><i class="bi bi-gear"></i> 设置</button>
+      </div>
+      <div style="padding:0 12px 8px;font-size:11px;color:#bbb;flex-shrink:0">© 2026 江月 158297295@qq.com</div>
     </div>
 
   <!-- 批量操作栏 -->
   
   <!-- 中：文件列表 / 查看 / 编辑 -->
   <div class="center-col">
-<div class="batch-bar" id="batchBar">
-    <span id="batchCount">0 项</span>
-    <button class="btn btn-outline-danger btn-sm" onclick="batchDelete()"><i class="bi bi-trash"></i> 批量删除</button>
-    <button class="btn btn-outline-secondary btn-sm" onclick="batchMove()"><i class="bi bi-arrow-right"></i> 批量移动</button>
-  
-  </div>
-
     <!-- 文件列表模式 -->
     <div id="modeList" class="mode-view active">
       <div class="toolbar">
@@ -69,10 +65,12 @@
           <button class="btn btn-outline-secondary btn-sm" onclick="newFolder()"><i class="bi bi-folder-plus"></i> <span>新建文件夹</span></button>
           <button class="btn btn-outline-secondary btn-sm" onclick="uploadFile()"><i class="bi bi-upload"></i> <span>上传</span></button>
           <button class="btn btn-outline-secondary btn-sm" onclick="loadDir(currentDir)"><i class="bi bi-arrow-clockwise"></i> <span>刷新</span></button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="moveSelectedItems()"><i class="bi bi-arrow-right"></i> <span>移动</span></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteSelectedItems()"><i class="bi bi-trash"></i> <span>删除</span></button>
         </div>
       </div>
       <div class="file-table-wrap" id="fileTableWrap">
-        <table class="file-table" id="fileTable"><thead><tr><th class="num-col" style="width:32px"><input type="checkbox" id="selectAllCheckbox" onchange="var c=this.checked;document.querySelectorAll('.file-item-checkbox').forEach(function(x){x.checked=c;toggleFileSelect(x.closest('.file-row').dataset.path,c)})"></th><th>名称</th><th class="size-col">大小</th><th class="time-col">修改时间</th><th class="action-col">操作</th></tr></thead><tbody id="fileList"></tbody></table>
+        <table class="file-table" id="fileTable"><thead><tr><th class="num-col" style="width:32px"><input type="checkbox" id="selectAllCheckbox" title="全选"></th><th>名称</th><th class="size-col">大小</th><th class="time-col">修改时间</th><th class="action-col">操作</th></tr></thead><tbody id="fileList"></tbody></table>
         <div class="empty-state" id="emptyState" style="display:none"><i class="bi bi-inbox"></i><p>此目录为空</p></div>
         <div id="listStatus" style="padding:10px 16px;text-align:center;font-size:13px;color:#999"></div>
       </div>

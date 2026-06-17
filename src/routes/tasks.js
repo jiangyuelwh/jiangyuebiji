@@ -111,4 +111,12 @@ router.post('/tasks/reminders/ensure', (req, res) => {
   }
 });
 
+router.post('/tasks/template/ensure', (req, res) => {
+  try {
+    res.json(taskService.ensureTemplatePage());
+  } catch (e) {
+    res.status(e.statusCode || 500).json({ success: false, error: e.message });
+  }
+});
+
 module.exports = router;

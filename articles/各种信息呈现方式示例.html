@@ -155,7 +155,8 @@
 <p>如果我在这里想引用上一页的介绍文档，可以直接写：<a class="wiki-link" href="javascript:void(0)" onclick="_openWikiLink('江月的个人笔记网站功能演示.html','江月的个人笔记网站功能演示')">江月的个人笔记网站功能演示</a>。</p>
 <p>这样以后你回看一篇内容时，不只是看孤立页面，而是能顺着关联一路展开。</p>
 <h2>10 图片与附件型信息</h2>
-<p>有些内容不是文字就能讲清楚，比如截图、原件、表格、PDF，这时候图片和附件就很重要。</p>
+<p>有些内容不是文字就能讲清楚，比如截图、原件、表格、PDF，这时候图片和附件就很重要。<br><figure class="md-asset-image"><img src="/fujian/%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202026-04-23%20204957_1781666835357.png" alt="屏幕截图 2026-04-23 204957.png"><figcaption>屏幕截图 2026-04-23 204957.png</figcaption></figure></p>
+<p><a class="md-asset-link" href="/fujian/%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/%E9%A6%96%E9%A1%B5%E5%92%8C%E7%BC%96%E8%BE%91%E9%A1%B5%E5%AE%9E%E6%96%BD%E8%B7%AF%E5%BE%84%E8%AF%B4%E6%98%8E_1781666853299.md" target="_blank" rel="noopener noreferrer"><span class="md-asset-icon">📎</span><span class="md-asset-name">首页和编辑页实施路径说明.md</span></a></p>
 <h3>示例场景</h3>
 <p>比如你写一篇《政策学习笔记》，可以这样组织：</p>
 <ul>
@@ -202,10 +203,7 @@
 </article>
 <div id="imageLightbox" class="image-lightbox" aria-hidden="true"><div class="image-lightbox-inner"><button type="button" class="image-lightbox-close" aria-label="关闭">×</button><img id="imageLightboxImg" src="" alt=""></div></div>
 
-<button onclick="copyLink(this)" style="position:fixed;top:12px;right:12px;z-index:999;border:1px solid rgba(208,215,222,.9);background:rgba(255,255,255,0.72);border-radius:10px;padding:10px 14px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.08);line-height:1.2;backdrop-filter:blur(6px);opacity:.86" title="复制文章链接">
-  🔗
-</button>
-<script>function copyLink(b){var text=window.location.href||"";function done(ok){b.innerHTML=ok?"\u2713 \u5df2\u590d\u5236":"\u2717 \u590d\u5236\u5931\u8d25";setTimeout(function(){b.innerHTML="\ud83d\udd17"},2000)}function showManual(){try{window.prompt("\u8bf7\u590d\u5236\u8fd9\u4e2a\u94fe\u63a5",text)}catch(e){alert(text)}done(false)}if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){done(true)}).catch(function(){fallback()});return}fallback();function fallback(){var ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","readonly");ta.style.position="fixed";ta.style.top="0";ta.style.left="-9999px";ta.style.opacity="0";document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);var ok=false;try{ok=document.execCommand("copy")}catch(e){ok=false}document.body.removeChild(ta);if(ok){done(true)}else{showManual()}}}function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
+<script>function _openWikiLink(path,name){try{if(window.parent&&window.parent!==window&&typeof window.parent.viewFile==='function'){window.parent.viewFile(name,path);return}}catch(e){} location.href='/?view='+encodeURIComponent(path)}(function(){var box=document.getElementById("imageLightbox");var img=document.getElementById("imageLightboxImg");if(!box||!img)return;function closeBox(){box.classList.remove("open");box.setAttribute("aria-hidden","true");img.src="";img.alt=""}document.addEventListener("click",function(e){var t=e.target;if(t&&t.closest&&t.closest(".md-asset-image img")){var im=t.closest(".md-asset-image img");img.src=im.getAttribute("src")||"";img.alt=im.getAttribute("alt")||"";box.classList.add("open");box.setAttribute("aria-hidden","false");e.preventDefault();return}if(t===box||t.closest(".image-lightbox-close"))closeBox()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeBox()})})();</script>
 </body>
 </html>
 <!--source-md
@@ -345,6 +343,10 @@ function saveNote(title, content) {
 ## 10 图片与附件型信息
 
 有些内容不是文字就能讲清楚，比如截图、原件、表格、PDF，这时候图片和附件就很重要。
+![屏幕截图 2026-04-23 204957.png](/fujian/%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202026-04-23%20204957_1781666835357.png)
+
+[首页和编辑页实施路径说明.md](/fujian/%E5%90%84%E7%A7%8D%E4%BF%A1%E6%81%AF%E5%91%88%E7%8E%B0%E6%96%B9%E5%BC%8F%E7%A4%BA%E4%BE%8B/%E9%A6%96%E9%A1%B5%E5%92%8C%E7%BC%96%E8%BE%91%E9%A1%B5%E5%AE%9E%E6%96%BD%E8%B7%AF%E5%BE%84%E8%AF%B4%E6%98%8E_1781666853299.md)
+
 
 ### 示例场景
 

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ARTICLES_DIR, FUJIAN_DIR, RECYCLE_BIN_DIR } = require('../config');
+const { normalizeArticleOrDirAssetLinks } = require('./asset-link-service');
 
 const RECYCLE_META = path.join(RECYCLE_BIN_DIR, 'index.json');
 const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
@@ -126,15 +127,47 @@ function restoreFromRecycleBin(id) {
       fs.renameSync(item.assetRecyclePath, assetTarget);
     }
   } catch {}
+  try { normalizeArticleOrDirAssetLinks(targetPath); } catch {}
 
   items.splice(idx, 1);
   writeIndex(items);
   return { success: true, path: item.originalPath };
 }
 
+function moveAssetToRecycleBin(relPath) {
+  cleanupRecycleBin();
+  const normalized = String(relPath || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  const sourcePath = path.resolve(FUJIAN_DIR, normalized);
+  if (!fs.existsSync(sourcePath)) {
+    const err = new Error('附件不存在');
+    err.statusCode = 404;
+    throw err;
+  }
+  const key = uniqueRecycleKey('asset__' + normalized);
+  const recyclePath = path.join(RECYCLE_BIN_DIR, key);
+  fs.mkdirSync(path.dirname(recyclePath), { recursive: true });
+  fs.renameSync(sourcePath, recyclePath);
+  const stat = fs.statSync(recyclePath);
+  const items = readIndex();
+  items.unshift({
+    id: key,
+    name: path.basename(normalized),
+    originalPath: '__asset__/' + normalized,
+    isDir: false,
+    deletedAt: new Date().toISOString(),
+    recyclePath,
+    assetRecyclePath: '',
+    size: stat.size || 0,
+  });
+  writeIndex(items);
+  return { success: true, recycled: true, id: key };
+}
+
 module.exports = {
   cleanupRecycleBin,
   moveToRecycleBin,
+  moveAssetToRecycleBin,
   listRecycleBin,
   restoreFromRecycleBin,
+  articleAssetDir,
 };
